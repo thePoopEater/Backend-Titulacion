@@ -38,6 +38,7 @@ export class GamificationService {
   public currentExerciseId: number | null = null;
   public isQuestionActive = false;
   public timePerQuestion = 30;
+  private currentExercise: any = null;
 
   private roundQuestionQueue: number[] = [];
   private roundEndTime: number | null = null;
@@ -109,11 +110,13 @@ export class GamificationService {
 
     if (this.roundEndTime && Date.now() > this.roundEndTime) {
       this.isQuestionActive = false;
+      this.emitFinalRoundSummary('Ronda finalizada por tiempo');
       return { status: 'round_ended', reason: 'Global round time expired' };
     }
 
     if (this.roundQuestionQueue.length === 0) {
       this.isQuestionActive = false;
+      this.emitFinalRoundSummary('Ronda completada');
       return { status: 'round_completed', reason: 'All exercises processed' };
     }
 
@@ -170,6 +173,7 @@ export class GamificationService {
     await this.sessionQuestionRepository.save(sessionQuestion);
 
     this.currentExerciseId = dto.questionId;
+    this.currentExercise = exercise;
     this.activeRoundResponses = [];
     this.isQuestionActive = true;
 
@@ -200,7 +204,7 @@ export class GamificationService {
     return this.activeRoundResponses.length;
   }
 
-  registerPlayerResponse(
+  async registerPlayerResponse(
     socketId: string,
     placements: Record<number, number>,
     clientTimestamp: number,
@@ -237,7 +241,27 @@ export class GamificationService {
       arrivalTimestamp: Date.now(),
     });
 
-    return { status: 'registered' };
+    // Score immediately for instant feedback
+    const items: any[] = (this.currentExercise as any)?.items || [];
+    let correctCount = 0;
+    for (const item of items) {
+      const placedCategory = placements[item.id];
+      if (placedCategory === item.correctCategoryId) {
+        correctCount++;
+      }
+    }
+    const totalItems = items.length || 1;
+    const score = Math.floor((correctCount / totalItems) * 1000);
+
+    return {
+      status: 'registered',
+      result: {
+        scoreObtained: score,
+        isCorrect: correctCount === totalItems,
+        totalItems,
+        correctCount,
+      },
+    };
   }
 
   async closeSession(sessionId: number): Promise<any> {
@@ -256,6 +280,7 @@ export class GamificationService {
 
     this.isQuestionActive = false;
     this.currentExerciseId = null;
+    this.currentExercise = null;
     this.currentSessionId = null;
     this.activeRoundResponses = [];
     this.studentSessionStartTimes.clear();
@@ -264,6 +289,13 @@ export class GamificationService {
     this.gamificationGateway.server
       .to(`session_${sessionId}`)
       .emit('ROUND_CLOSED', { status: 'cleared', sessionEnded: true });
+
+    this.gamificationGateway.server
+      .to(`session_${sessionId}`)
+      .emit('ROUND_FINAL_SUMMARY', {
+        reason: 'Sesion cerrada',
+        sessionId,
+      });
 
     return { status: 'session_closed', sessionId };
   }
@@ -342,6 +374,14 @@ export class GamificationService {
 
     await this.statisticsService.saveRoundStats(roundSummary);
 
+    const summaryPayload = {
+      questionId: this.currentExerciseId,
+      results: roundSummary,
+    };
+    this.gamificationGateway.server
+      .to(`session_${this.currentSessionId}`)
+      .emit('ROUND_SUMMARY', summaryPayload);
+
     if (!skipEmit) {
       for (const [socketId, player] of this.activePlayers.entries()) {
         if (player.sessionId === this.currentSessionId) {
@@ -362,5 +402,14 @@ export class GamificationService {
 
     this.activeRoundResponses = [];
     return roundSummary;
+  }
+
+  private emitFinalRoundSummary(reason: string) {
+    this.gamificationGateway.server
+      .to(`session_${this.currentSessionId}`)
+      .emit('ROUND_FINAL_SUMMARY', {
+        reason,
+        sessionId: this.currentSessionId,
+      });
   }
 }

@@ -170,7 +170,7 @@ Establece un ejercicio como el ejercicio activo de la sesión. Emite el evento `
 
 ## `POST /gamification/start-round-flow`
 
-Configura una ronda completa (cola de IDs de ejercicios, tiempos) y avanza automáticamente al primer ejercicio.
+Configura una ronda completa (cola de IDs de ejercicios, tiempos) y avanza automáticamente al primer ejercicio. Al finalizar la ronda, emite `ROUND_FINAL_SUMMARY` vía WebSocket.
 
 **Request body:**
 
@@ -193,7 +193,7 @@ Configura una ronda completa (cola de IDs de ejercicios, tiempos) y avanza autom
 
 ## `POST /gamification/next-question`
 
-Avanza al siguiente ejercicio en la cola de la ronda. Si el ejercicio anterior tenía respuestas, las procesa antes de avanzar.
+Avanza al siguiente ejercicio en la cola de la ronda. Si el ejercicio anterior tenía respuestas, las procesa antes de avanzar. Durante el procesamiento emite `ROUND_SUMMARY` vía WebSocket.
 
 **Response:**
 
@@ -210,7 +210,7 @@ Avanza al siguiente ejercicio en la cola de la ronda. Si el ejercicio anterior t
 
 ## `POST /gamification/close-session/:id`
 
-Cierra una sesión de juego. Si hay un ejercicio activo con respuestas sin procesar, las procesa antes de cerrar. Emite `ROUND_CLOSED` vía WebSocket.
+Cierra una sesión de juego. Si hay un ejercicio activo con respuestas sin procesar, las procesa antes de cerrar. Emite `ROUND_CLOSED` y `ROUND_FINAL_SUMMARY` vía WebSocket.
 
 **Response:**
 
@@ -242,7 +242,7 @@ Registra un estudiante en una sesión.
 
 ### `SUBMIT_RESPONSE`
 
-Envía las colocaciones de ítems en categorías.
+Envía las colocaciones de ítems en categorías. El servidor responde inmediatamente vía callback con el resultado de la clasificación (sin esperar a los demás estudiantes).
 
 **Payload:**
 
@@ -250,6 +250,21 @@ Envía las colocaciones de ítems en categorías.
 {
   placements: Record<number, number>; // { itemId: categoryId, ... }
   timestamp: number; // client timestamp
+}
+```
+
+**Ack callback (respuesta inmediata):**
+
+```ts
+{
+  status: 'registered' | 'rejected';
+  reason?: string;
+  result?: {
+    scoreObtained: number;   // 0–1000
+    isCorrect: boolean;      // true solo si todos los ítems están correctos
+    totalItems: number;
+    correctCount: number;
+  };
 }
 ```
 
@@ -277,9 +292,44 @@ Enviado cuando se activa un nuevo ejercicio.
 }
 ```
 
+### `ROUND_SUMMARY`
+
+Enviado a toda la sala después de procesar los resultados de cada pregunta. Contiene los resultados de **todos los estudiantes** para esa pregunta. En el panel del profesor actualiza la tabla de registros automáticamente.
+
+```ts
+{
+  questionId: number;
+  results: {
+    sessionId: number;
+    questionId: number;
+    playerId: string;
+    selectedAlternative: string; // JSON-stringified placements
+    scoreObtained: number; // 0–1000
+    isCorrect: boolean;
+    positionInGame: number;
+    clientTimestamp: number;
+    arrivalTimestamp: number;
+    responseTimeSeconds: number;
+    totalTimeSeconds: number;
+  }
+  [];
+}
+```
+
+### `ROUND_FINAL_SUMMARY`
+
+Enviado a toda la sala cuando la ronda finaliza (cola de preguntas vacía, tiempo global expirado, o sesión cerrada). Los estudiantes ven automáticamente su **modal de puntaje final** sin necesidad de que el profesor cierre la sesión.
+
+```ts
+{
+  reason: string; // "Ronda completada" | "Ronda finalizada por tiempo" | "Sesion cerrada"
+  sessionId: number;
+}
+```
+
 ### `ROUND_CLOSED`
 
-Enviado al cerrar ronda o sesión.
+Enviado a cada estudiante individualmente cuando su pregunta se cierra (todos respondieron o se avanzó manualmente), y también a toda la sala cuando se cierra la sesión.
 
 ```ts
 {
@@ -287,7 +337,7 @@ Enviado al cerrar ronda o sesión.
   sessionEnded: boolean;
   scoreObtained?: number;
   isCorrect?: boolean;
-  position?: number;
+  position?: number;     // posición en esa pregunta (solo cuando sessionEnded: false)
 }
 ```
 
@@ -334,6 +384,7 @@ Fuerza el fin de la ronda actual y procesa los resultados del ejercicio activo. 
   clientTimestamp: number;
   arrivalTimestamp: number;
   responseTimeSeconds: number;
+  totalTimeSeconds: number;
 }
 [];
 ```

@@ -229,8 +229,12 @@
           if (data.sessionEnded) {
             await renderStudentRoundHistory();
           } else {
-            showFeedback(data.isCorrect, data.scoreObtained);
+            showFeedback(data.isCorrect, data.scoreObtained, data.position);
           }
+        });
+
+        socket.on('ROUND_FINAL_SUMMARY', async () => {
+          await renderStudentRoundHistory();
         });
 
         socket.on('ROUND_ADVANCED', (data) => {
@@ -373,14 +377,20 @@
       function submitPlacements() {
         if (!socket || !socket.connected) return;
         const payload = { placements, timestamp: Date.now() };
-        socket.emit('SUBMIT_RESPONSE', payload);
         document.getElementById('submitBtn').disabled = true;
         document
           .getElementById('submitBtn')
           .classList.add('opacity-40', 'pointer-events-none');
         document.getElementById('hudTitle').textContent =
-          'Clasificacion enviada. Esperando...';
-        document.getElementById('feedbackBanner').classList.add('hidden');
+          'Clasificacion enviada';
+        socket.emit('SUBMIT_RESPONSE', payload, (response) => {
+          if (response && response.status === 'registered' && response.result) {
+            showFeedback(
+              response.result.isCorrect,
+              response.result.scoreObtained,
+            );
+          }
+        });
       }
 
       async function renderStudentRoundHistory() {
@@ -509,17 +519,18 @@
         pullMeetings();
       }
 
-      function showFeedback(isCorrect, score) {
+      function showFeedback(isCorrect, score, position) {
         const banner = document.getElementById('feedbackBanner');
         banner.classList.remove('hidden');
+        const posText = position ? ` (#${position})` : '';
         if (isCorrect) {
           banner.className =
             'mt-3 p-2 rounded text-center text-xs font-bold font-mono bg-blue-50 border border-blue-200 text-blue-700';
-          banner.textContent = 'Clasificacion correcta';
+          banner.textContent = `Clasificacion correcta${posText} - ${score} pts`;
         } else {
           banner.className =
             'mt-3 p-2 rounded text-center text-xs font-bold font-mono bg-red-50 border border-red-200 text-red-700';
-          banner.textContent = 'Clasificacion incorrecta';
+          banner.textContent = `Clasificacion incorrecta${posText} - ${score} pts`;
         }
       }
 

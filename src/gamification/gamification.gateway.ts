@@ -87,7 +87,7 @@ export class GamificationGateway
     data: { placements: Record<number, number>; timestamp: number },
     @ConnectedSocket() client: Socket,
   ) {
-    const response = this.gamificationService.registerPlayerResponse(
+    const response = await this.gamificationService.registerPlayerResponse(
       client.id,
       data.placements,
       data.timestamp,

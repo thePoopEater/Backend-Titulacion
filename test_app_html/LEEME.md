@@ -33,12 +33,13 @@ Panel central para orquestar rondas de ejercicios de clasificación.
    - Click "INICIAR SECUENCIA DE RONDA EVALUATIVA"
 5. **Avanzar entre ejercicios:**
    - Click "Siguiente" — guarda respuestas actuales y muestra el siguiente
+   - La tabla de resultados se actualiza automáticamente
 6. **Cerrar sesión:**
    - Click "Cerrar Sesión" — guarda respuestas pendientes, cierra la sala y notifica a estudiantes
 
 **Sección 3 (Módulo Analítico):**
 
-- Click "Extraer Logs de Postgres" para ver todas las respuestas registradas
+- Click "Consultar Registros" para ver todas las respuestas registradas (se actualiza automáticamente al procesar cada pregunta)
 - Muestra: estudiante, sesión, rendimiento, puntaje y latencia
 
 ---
@@ -56,25 +57,26 @@ Interfaz drag & drop para que los estudiantes clasifiquen conceptos.
 5. Click "Vincular a Sala"
 6. **Esperar** a que el profesor inicie la ronda
 7. **Responder** arrastrando cada ítem (texto) desde la zona central a la categoría correspondiente
-8. **Ver feedback** visual de las colocaciones
-9. Al cerrar el profesor la sesión, ver el **modal de resumen** con puntaje total
+8. **Ver feedback** visual inmediato al enviar (correcta/incorrecta + puntaje), sin esperar a los demás estudiantes
+9. Al terminar todas las preguntas de la ronda, ver automáticamente el **modal de resumen** con puntaje total y desglose (sin necesidad de que el profesor cierre la sesión)
 
 ---
 
 ## Flujo típico de prueba
 
-| Paso | Acción                                                            |
-| ---- | ----------------------------------------------------------------- |
-| 1    | Abrir `gestion_contenido.html`                                    |
-| 2    | Crear 2-3 ejercicios con categorías e ítems                       |
-| 3    | Abrir 2-3 pestañas con `estudiante.html` (cambiar ID en cada una) |
-| 4    | En cada estudiante, seleccionar la sala y vincular                |
-| 5    | En profesor, crear sesión e iniciar ronda                         |
-| 6    | Estudiantes arrastran ítems a las categorías                      |
-| 7    | Profesor click "Siguiente"                                        |
-| 8    | Repetir 6-7 hasta terminar                                        |
-| 9    | Profesor click "Cerrar Sesión"                                    |
-| 10   | Revisar tabla analítica en sección 3                              |
+| Paso | Acción                                                                 |
+| ---- | ---------------------------------------------------------------------- |
+| 1    | Abrir `gestion_contenido.html`                                         |
+| 2    | Crear 2-3 ejercicios con categorías e ítems                            |
+| 3    | Abrir 2-3 pestañas con `estudiante.html` (cambiar ID en cada una)      |
+| 4    | En cada estudiante, seleccionar la sala y vincular                     |
+| 5    | En profesor, crear sesión e iniciar ronda                              |
+| 6    | Estudiantes arrastran ítems a las categorías y envían                  |
+| 7    | Cada estudiante ve su resultado inmediatamente al enviar               |
+| 8    | Profesor click "Siguiente" o espera auto-avance cuando todos responden |
+| 9    | Repetir 6-8 hasta terminar todas las preguntas                         |
+| 10   | Estudiantes ven automáticamente su modal de puntaje final              |
+| 11   | Revisar tabla analítica en sección 3                                   |
 
 ---
 
