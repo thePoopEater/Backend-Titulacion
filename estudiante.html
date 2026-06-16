@@ -1,0 +1,546 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Cliente de Evaluacion</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  </head>
+  <body
+    class="bg-gray-50 text-gray-900 font-sans p-4 flex flex-col items-center min-h-screen"
+  >
+    <div
+      class="w-full max-w-4xl bg-white border border-gray-200 p-5 rounded-xl shadow-2xl relative min-h-[600px] flex flex-col"
+    >
+      <!-- Header -->
+      <header
+        class="mb-4 border-b border-gray-200 pb-2 flex justify-between items-center font-mono text-xs"
+      >
+        <h1 class="font-bold tracking-widest text-gray-700">
+          Cliente de Evaluacion
+        </h1>
+        <span
+          id="netIndicator"
+          class="w-2.5 h-2.5 rounded-full bg-red-500"
+        ></span>
+      </header>
+
+      <!-- Login Section -->
+      <div
+        id="loginSection"
+        class="mb-5 bg-gray-50 p-4 rounded-lg border border-gray-200 text-xs"
+      >
+        <h2 class="font-bold text-gray-600 uppercase tracking-wider mb-2">
+          Autenticacion
+        </h2>
+        <div class="mb-2">
+          <label class="block text-[10px] text-gray-400 mb-0.5"
+            >Identificador Estudiante</label
+          >
+          <input
+            type="text"
+            id="studId"
+            value="Estudiante_Daniel"
+            class="w-full bg-white border border-gray-300 rounded px-2 py-1 text-gray-900 focus:outline-none"
+          />
+        </div>
+        <div class="mb-3">
+          <label class="block text-[10px] text-gray-400 mb-0.5"
+            >Seleccionar Sala Activa en Postgres</label
+          >
+          <div class="flex gap-2">
+            <select
+              id="meetingSelect"
+              class="w-full bg-white border border-gray-300 rounded px-2 py-1 text-gray-900 focus:outline-none"
+            >
+              <option value="">Buscar...</option>
+            </select>
+            <button
+              onclick="pullMeetings()"
+              class="bg-gray-400 px-2 rounded text-sm leading-none text-white font-bold"
+            >
+              &xrarr;
+            </button>
+          </div>
+        </div>
+        <button
+          onclick="joinActiveMeeting()"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-1.5 rounded transition"
+        >
+          Vincular a Sala
+        </button>
+      </div>
+
+      <!-- Game View -->
+      <div id="hudGameView" class="hidden flex-1 flex flex-col">
+        <div
+          class="flex justify-between items-center text-[10px] font-mono text-gray-400 mb-2"
+        >
+          <div>
+            Nodo: <span id="nodeLabel" class="text-red-500">Desconectado</span>
+          </div>
+          <div class="flex items-center gap-1">
+            <input
+              type="checkbox"
+              id="trackingCheck"
+              onchange="toggleSecondaryStream()"
+              class="w-3 h-3"
+            />
+            <span>Stream Tracking</span>
+          </div>
+        </div>
+
+        <div
+          id="hudTitle"
+          class="text-center font-bold text-sm text-gray-700 mb-4"
+        >
+          Conectado. Esperando inicio...
+        </div>
+
+        <!-- Two-column parallel layout -->
+        <div class="flex-1 flex gap-4">
+          <!-- Left column: Descriptions (drop targets) -->
+          <div class="flex-1">
+            <div
+              class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 text-center bg-gray-100 py-1 rounded"
+            >
+              Descripciones
+            </div>
+            <div id="descColumn" class="space-y-2"></div>
+          </div>
+
+          <!-- Right column: Concepts (draggable) -->
+          <div class="flex-1">
+            <div
+              class="text-[10px] font-bold text-gray-500 uppercase tracking-wider mb-2 text-center bg-gray-100 py-1 rounded"
+            >
+              Conceptos
+            </div>
+            <div id="conceptColumn" class="space-y-2"></div>
+          </div>
+        </div>
+
+        <div class="flex gap-2 mt-4">
+          <button
+            id="submitBtn"
+            onclick="submitPlacements()"
+            disabled
+            class="flex-1 bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded text-xs transition disabled:opacity-40 disabled:pointer-events-none"
+          >
+            Enviar Clasificacion
+          </button>
+        </div>
+
+        <div
+          id="feedbackBanner"
+          class="hidden mt-3 p-2 rounded text-center text-xs font-bold font-mono"
+        ></div>
+      </div>
+
+      <!-- Score Modal -->
+      <div
+        id="scoreModal"
+        class="hidden absolute inset-0 bg-white rounded-xl flex flex-col p-5 z-50 justify-between"
+      >
+        <div>
+          <div class="text-center mb-4">
+            <h2 class="text-lg font-bold text-gray-700">
+              Resumen de la Ronda Evaluativa
+            </h2>
+            <p class="text-[10px] text-gray-400 font-mono">
+              Consolidacion de Metricas en PostgreSQL
+            </p>
+          </div>
+          <label
+            class="block text-[10px] text-gray-600 uppercase font-mono mb-2 tracking-wider"
+            >Historial de Respuestas:</label
+          >
+          <div
+            id="historyQuestionsContainer"
+            class="space-y-2 max-h-64 overflow-y-auto pr-1"
+          ></div>
+        </div>
+        <div class="mt-4 pt-3 border-t border-gray-200">
+          <div
+            class="bg-gray-50 border border-gray-200 p-3 rounded-lg flex justify-between items-center mb-2 font-mono"
+          >
+            <span class="text-[10px] text-gray-400"
+              >PUNTAJE TOTAL ACUMULADO:</span
+            >
+            <span id="modalTotalScore" class="text-lg font-bold text-gray-800"
+              >0 pts</span
+            >
+          </div>
+          <div
+            class="bg-gray-50 border border-gray-200 p-2 rounded-lg flex justify-between items-center mb-4 font-mono"
+          >
+            <span class="text-[10px] text-gray-400">TIEMPO TOTAL:</span>
+            <span id="modalTotalTime" class="text-sm font-bold text-gray-800"
+              >0 segs</span
+            >
+          </div>
+          <button
+            onclick="returnToMenu()"
+            class="w-full bg-gray-600 hover:bg-gray-700 text-white font-bold py-2 rounded text-xs transition tracking-wide"
+          >
+            Volver al Menu
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const BACKEND_URL = 'http://localhost:3000';
+      let socket;
+      let secondaryInterval = null;
+      let currentStudentId = '';
+      let currentSessionId = null;
+      let placements = {};
+      let exerciseItems = [];
+      let exerciseCategories = [];
+
+      function connectWebsocket() {
+        socket = io(BACKEND_URL, { transports: ['websocket', 'polling'] });
+
+        socket.on('connect', () => {
+          document.getElementById('netIndicator').className =
+            'w-2.5 h-2.5 rounded-full bg-green-500 animate-pulse';
+        });
+
+        socket.on('disconnect', () => {
+          document.getElementById('netIndicator').className =
+            'w-2.5 h-2.5 rounded-full bg-red-500';
+        });
+
+        socket.on('NEW_QUESTION_LOADED', (data) => {
+          document.getElementById('feedbackBanner').classList.add('hidden');
+          document.getElementById('hudTitle').textContent = data.title;
+          exerciseItems = data.items || [];
+          exerciseCategories = data.categories || [];
+          renderExercise(data);
+          placements = {};
+          document.getElementById('submitBtn').disabled = false;
+          document
+            .getElementById('submitBtn')
+            .classList.remove('opacity-40', 'pointer-events-none');
+        });
+
+        socket.on('ROUND_CLOSED', async (data) => {
+          if (data.sessionEnded) {
+            await renderStudentRoundHistory();
+          } else {
+            showFeedback(data.isCorrect, data.scoreObtained);
+          }
+        });
+
+        socket.on('ROUND_ADVANCED', (data) => {
+          // Clear UI between questions when auto-advancing
+          document.getElementById('feedbackBanner').classList.add('hidden');
+          document.getElementById('hudTitle').textContent =
+            'Siguiente pregunta...';
+        });
+      }
+
+      function renderExercise(data) {
+        const descCol = document.getElementById('descColumn');
+        const conceptCol = document.getElementById('conceptColumn');
+
+        const items = data.items || [];
+        const categories = data.categories || [];
+
+        // Shuffle both arrays for random ordering
+        shuffleArray(items);
+        shuffleArray(categories);
+
+        // Left column: Descriptions as drop zones
+        descCol.innerHTML = items
+          .map(
+            (item) => `
+          <div class="desc-card border-2 border-dashed border-gray-300 rounded-lg p-3 bg-white min-h-[60px] transition-colors cursor-default"
+               data-item-id="${item.id}"
+               ondrop="onDrop(event)"
+               ondragover="onDragOver(event)"
+               ondragleave="onDragLeave(event)">
+            <p class="text-xs text-gray-700">${item.textContent}</p>
+            <div class="matched-concept mt-1 flex flex-wrap gap-1"></div>
+          </div>
+        `,
+          )
+          .join('');
+
+        // Right column: Concepts as draggable cards (always stay, reusable)
+        conceptCol.innerHTML = categories
+          .map(
+            (cat) => `
+          <div class="concept-card bg-blue-50 border border-blue-200 rounded-lg px-3 py-2 text-xs font-bold text-blue-700 cursor-grab active:cursor-grabbing shadow-sm transition-all hover:bg-blue-100"
+               draggable="true"
+               data-category-id="${cat.id}"
+               data-category-name="${cat.name}"
+               ondragstart="onDragStart(event)">
+            ${cat.name}
+          </div>
+        `,
+          )
+          .join('');
+      }
+
+      function shuffleArray(arr) {
+        for (let i = arr.length - 1; i > 0; i--) {
+          const j = Math.floor(Math.random() * (i + 1));
+          [arr[i], arr[j]] = [arr[j], arr[i]];
+        }
+      }
+
+      function onDragStart(event) {
+        const card = event.target.closest('.concept-card');
+        if (!card) return;
+        event.dataTransfer.setData(
+          'text/plain',
+          JSON.stringify({
+            categoryId: card.dataset.categoryId,
+            categoryName: card.dataset.categoryName,
+          }),
+        );
+        event.dataTransfer.effectAllowed = 'copy';
+      }
+
+      function onDragOver(event) {
+        event.preventDefault();
+        event.dataTransfer.dropEffect = 'copy';
+        const card = event.currentTarget.closest('.desc-card');
+        if (card) {
+          card.classList.add('border-blue-400', 'bg-blue-50');
+        }
+      }
+
+      function onDragLeave(event) {
+        const card = event.currentTarget.closest('.desc-card');
+        if (card) {
+          card.classList.remove('border-blue-400', 'bg-blue-50');
+        }
+      }
+
+      function onDrop(event) {
+        event.preventDefault();
+        const descCard = event.currentTarget.closest('.desc-card');
+        if (!descCard) return;
+
+        descCard.classList.remove('border-blue-400', 'bg-blue-50');
+
+        let data;
+        try {
+          data = JSON.parse(event.dataTransfer.getData('text/plain'));
+        } catch (e) {
+          return;
+        }
+
+        const itemId = parseInt(descCard.dataset.itemId, 10);
+        const categoryId = parseInt(data.categoryId, 10);
+        const categoryName = data.categoryName;
+
+        // If already matched, remove old placement first
+        if (descCard.dataset.matched) {
+          const oldTag = descCard.querySelector('.matched-concept .match-tag');
+          if (oldTag) oldTag.remove();
+        }
+
+        // Mark the description as matched
+        descCard.dataset.matched = 'true';
+        descCard.classList.add('border-green-300', 'bg-green-50');
+        descCard.classList.remove('border-dashed', 'border-gray-300');
+
+        // Show the concept tag (click to remove / undo)
+        const tagContainer = descCard.querySelector('.matched-concept');
+        tagContainer.innerHTML = '';
+        const tag = document.createElement('span');
+        tag.className =
+          'match-tag inline-block bg-green-100 text-green-700 text-[10px] font-bold px-1.5 py-0.5 rounded cursor-pointer hover:bg-red-100 hover:text-red-700';
+        tag.textContent = categoryName + ' x';
+        tag.title = 'Click para quitar';
+        tag.onclick = function () {
+          delete placements[itemId];
+          descCard.dataset.matched = '';
+          descCard.classList.remove('border-green-300', 'bg-green-50');
+          descCard.classList.add('border-dashed', 'border-gray-300');
+          tag.remove();
+        };
+        tagContainer.appendChild(tag);
+
+        // Record placement (concept card stays in right column, reusable)
+        placements[itemId] = categoryId;
+      }
+
+      function submitPlacements() {
+        if (!socket || !socket.connected) return;
+        const payload = { placements, timestamp: Date.now() };
+        socket.emit('SUBMIT_RESPONSE', payload);
+        document.getElementById('submitBtn').disabled = true;
+        document
+          .getElementById('submitBtn')
+          .classList.add('opacity-40', 'pointer-events-none');
+        document.getElementById('hudTitle').textContent =
+          'Clasificacion enviada. Esperando...';
+        document.getElementById('feedbackBanner').classList.add('hidden');
+      }
+
+      async function renderStudentRoundHistory() {
+        try {
+          const response = await fetch(`${BACKEND_URL}/statistics/report`);
+          const allLogs = await response.json();
+
+          const studentLogs = allLogs.filter(
+            (log) =>
+              log.playerId === currentStudentId &&
+              log.sessionId === currentSessionId,
+          );
+
+          const container = document.getElementById(
+            'historyQuestionsContainer',
+          );
+          let totalScore = 0;
+          let totalTime = 0;
+
+          if (studentLogs.length === 0) {
+            container.innerHTML =
+              '<div class="text-xs text-gray-400 italic text-center p-4">No registraste respuestas en esta ronda.</div>';
+            document.getElementById('modalTotalScore').textContent = '0 pts';
+            document.getElementById('modalTotalTime').textContent = '0 segs';
+          } else {
+            container.innerHTML = studentLogs
+              .map((log) => {
+                totalScore += log.scoreObtained;
+                if (log.totalTimeSeconds) totalTime = log.totalTimeSeconds;
+                const statusColor = log.isCorrect
+                  ? 'border-green-300 bg-green-50'
+                  : 'border-red-300 bg-red-50';
+                const badgeColor = log.isCorrect
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-red-100 text-red-700';
+                const statusText = log.isCorrect ? 'Correcta' : 'Incorrecta';
+                const placementsStr = log.selectedAlternative || '-';
+
+                return `
+                <div class="p-2.5 border rounded-lg text-[11px] font-mono ${statusColor}">
+                  <div class="flex justify-between items-center mb-1">
+                    <span class="text-gray-500 font-bold">Ejercicio ID: ${log.questionId}</span>
+                    <span class="px-1.5 py-0.5 rounded text-[9px] font-bold ${badgeColor}">${statusText}</span>
+                  </div>
+                  <div class="grid grid-cols-2 gap-1 text-gray-600 text-[10px] pt-1 border-t border-gray-200">
+                    <div>Placements: <span class="font-bold">${placementsStr}</span></div>
+                    <div class="text-right">Puntos: <span class="text-gray-800 font-bold">${log.scoreObtained}</span></div>
+                  </div>
+                  <div class="text-[9px] text-gray-400 mt-1">Lag de Red: ${log.compensatedLagMs} ms</div>
+                </div>
+              `;
+              })
+              .join('');
+
+            document.getElementById('modalTotalScore').textContent =
+              `${totalScore} pts`;
+            document.getElementById('modalTotalTime').textContent =
+              `${totalTime} segs`;
+          }
+
+          document.getElementById('feedbackBanner').classList.add('hidden');
+          document.getElementById('scoreModal').classList.remove('hidden');
+        } catch (error) {
+          console.error('Error al compilar el historial de la ronda:', error);
+        }
+      }
+
+      async function pullMeetings() {
+        try {
+          const res = await fetch(
+            `${BACKEND_URL}/gamification/active-sessions`,
+          );
+          const data = await res.json();
+          const select = document.getElementById('meetingSelect');
+          if (data.length === 0) {
+            select.innerHTML = '<option value="">No hay salas</option>';
+            return;
+          }
+          select.innerHTML = data
+            .map(
+              (s) => `<option value="${s.id}">${s.name} (ID: ${s.id})</option>`,
+            )
+            .join('');
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      function joinActiveMeeting() {
+        currentStudentId = document.getElementById('studId').value;
+        currentSessionId = parseInt(
+          document.getElementById('meetingSelect').value,
+          10,
+        );
+        if (!socket || !socket.connected || !currentSessionId)
+          return alert('WebSocket no enlazado.');
+
+        socket.emit('LOGIN_PLAYER', {
+          studentId: currentStudentId,
+          sessionId: currentSessionId,
+        });
+
+        document.getElementById('nodeLabel').textContent =
+          `${currentStudentId} [Sala ${currentSessionId}]`;
+        document.getElementById('nodeLabel').className =
+          'text-green-600 font-bold';
+
+        document.getElementById('loginSection').classList.add('hidden');
+        document.getElementById('hudGameView').classList.remove('hidden');
+        document.getElementById('hudTitle').textContent =
+          'Conectado a la sesion. Esperando inicio...';
+      }
+
+      function returnToMenu() {
+        if (secondaryInterval) {
+          clearInterval(secondaryInterval);
+          secondaryInterval = null;
+        }
+        document.getElementById('feedbackBanner').classList.add('hidden');
+        document.getElementById('trackingCheck').checked = false;
+        document.getElementById('scoreModal').classList.add('hidden');
+        document.getElementById('hudGameView').classList.add('hidden');
+        document.getElementById('loginSection').classList.remove('hidden');
+        document.getElementById('nodeLabel').textContent = 'Desconectado';
+        document.getElementById('nodeLabel').className = 'text-red-500';
+        pullMeetings();
+      }
+
+      function showFeedback(isCorrect, score) {
+        const banner = document.getElementById('feedbackBanner');
+        banner.classList.remove('hidden');
+        if (isCorrect) {
+          banner.className =
+            'mt-3 p-2 rounded text-center text-xs font-bold font-mono bg-blue-50 border border-blue-200 text-blue-700';
+          banner.textContent = 'Clasificacion correcta';
+        } else {
+          banner.className =
+            'mt-3 p-2 rounded text-center text-xs font-bold font-mono bg-red-50 border border-red-200 text-red-700';
+          banner.textContent = 'Clasificacion incorrecta';
+        }
+      }
+
+      function toggleSecondaryStream() {
+        const active = document.getElementById('trackingCheck').checked;
+        if (active) {
+          secondaryInterval = setInterval(() => {
+            if (socket && socket.connected) {
+              socket.emit('TRACKING_DATA', { pulse: Math.random() });
+            }
+          }, 16);
+        } else {
+          clearInterval(secondaryInterval);
+          secondaryInterval = null;
+        }
+      }
+
+      window.onload = () => {
+        connectWebsocket();
+        pullMeetings();
+      };
+    </script>
+  </body>
+</html>

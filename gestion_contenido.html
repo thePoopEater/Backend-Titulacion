@@ -1,0 +1,819 @@
+<!doctype html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <title>Panel de Control - Sistema de Evaluación</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.socket.io/4.7.2/socket.io.min.js"></script>
+  </head>
+  <body class="bg-gray-50 text-gray-900 font-sans p-6">
+    <header class="mb-6 border-b border-gray-200 pb-4">
+      <h1 class="text-2xl font-bold text-gray-900 tracking-tight">
+        Panel de Control
+      </h1>
+      <p class="text-gray-500 text-sm">
+        Gestión de rondas evaluativas y monitoreo de respuestas
+      </p>
+    </header>
+
+    <div class="grid grid-cols-1 xl:grid-cols-3 gap-6 mb-6">
+      <div class="bg-white p-5 rounded-lg border border-gray-200">
+        <div
+          class="flex justify-between items-center mb-4 border-b border-gray-300 pb-2"
+        >
+          <h2
+            class="text-base font-semibold text-blue-400"
+            id="formActionTitle"
+          >
+            1. Crear Ejercicio
+          </h2>
+          <button
+            onclick="clearForm()"
+            class="text-[10px] bg-gray-200 px-2 py-0.5 rounded text-gray-700"
+          >
+            Modo Nuevo
+          </button>
+        </div>
+
+        <input type="hidden" id="editExerciseId" value="" />
+
+        <div class="mb-2">
+          <label class="block text-[10px] text-gray-500 uppercase"
+            >Título</label
+          >
+          <input
+            type="text"
+            id="exTitle"
+            class="w-full bg-gray-200 border border-gray-300 rounded px-2 py-1 text-xs text-gray-900 focus:outline-none"
+          />
+        </div>
+
+        <div class="mb-3">
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-[10px] text-gray-500 uppercase"
+              >Conceptos</label
+            >
+            <button
+              onclick="addCategory()"
+              class="text-[10px] bg-gray-200 px-2 py-0.5 rounded text-gray-700 hover:bg-gray-300"
+            >
+              + Agregar Concepto
+            </button>
+          </div>
+          <div id="categoryInputs" class="space-y-1"></div>
+        </div>
+
+        <div class="mb-3">
+          <div class="flex justify-between items-center mb-1">
+            <label class="block text-[10px] text-gray-500 uppercase"
+              >Descripciones</label
+            >
+            <button
+              onclick="addItem()"
+              class="text-[10px] bg-gray-200 px-2 py-0.5 rounded text-gray-700 hover:bg-gray-300"
+            >
+              + Agregar Descripcion
+            </button>
+          </div>
+          <div id="itemInputs" class="space-y-1"></div>
+        </div>
+
+        <button
+          onclick="submitExerciseForm()"
+          class="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-1.5 rounded text-xs transition mb-4"
+        >
+          Guardar Ejercicio
+        </button>
+
+        <label class="block text-[10px] text-gray-500 uppercase mb-1"
+          >Repositorio Almacenado:</label
+        >
+        <div
+          id="exercisesList"
+          class="bg-gray-100 p-2 rounded text-xs max-h-36 overflow-y-auto font-mono flex flex-col gap-1 border border-gray-300"
+        >
+          Sincronizando...
+        </div>
+      </div>
+
+      <div
+        class="bg-white p-5 rounded-lg border border-gray-200 flex flex-col justify-between"
+      >
+        <div>
+          <h2
+            class="text-base font-semibold text-gray-700 border-b border-gray-300 pb-2"
+          >
+            2. Configuración de Ronda
+          </h2>
+
+          <div class="mb-3">
+            <label class="block text-xs text-gray-500"
+              >Abrir Nueva Sesion</label
+            >
+            <div class="flex gap-2">
+              <input
+                type="text"
+                id="sessionName"
+                value="Ronda Evaluativa Ciberseguridad"
+                class="w-full bg-gray-200 border border-gray-300 rounded px-2 py-1 text-xs text-gray-900 focus:outline-none"
+              />
+              <button
+                onclick="createSession()"
+                class="bg-blue-600 text-xs px-3 rounded"
+              >
+                Abrir
+              </button>
+            </div>
+          </div>
+
+          <div
+            class="bg-gray-100 p-3 rounded-lg border border-gray-300 mb-3 text-xs"
+          >
+            <div class="grid grid-cols-2 gap-2 mb-2">
+              <div>
+                <label class="block text-[10px] text-gray-500"
+                  >ID Reunión Destino</label
+                >
+                <input
+                  type="number"
+                  id="targetSessionId"
+                  value="1"
+                  class="w-full bg-gray-200 border border-gray-300 rounded px-2 py-1 text-gray-900 focus:outline-none"
+                />
+              </div>
+              <div>
+                <button
+                  onclick="connectAsProfessor()"
+                  class="w-full mt-4 bg-gray-500 text-[11px] py-1 rounded"
+                >
+                  Escuchar Sala
+                </button>
+              </div>
+            </div>
+            <div class="mb-2">
+              <label class="block text-[10px] text-gray-500"
+                >Secuencia de Preguntas (Ej: 1,2,3)</label
+              >
+              <input
+                type="text"
+                id="roundQueueInput"
+                value="1"
+                class="w-full bg-gray-200 border border-gray-300 rounded px-2 py-1 font-mono text-gray-900 focus:outline-none"
+              />
+            </div>
+            <div class="grid grid-cols-2 gap-2">
+              <div>
+                <label class="block text-[10px] text-gray-500"
+                  >Tiempo por Q (Segs)</label
+                >
+                <input
+                  type="number"
+                  id="timePerQuestion"
+                  value="45"
+                  class="w-full bg-gray-200 border border-gray-300 rounded px-2 py-1 text-gray-900 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label class="block text-[10px] text-gray-500"
+                  >Tiempo Ronda (Mins)</label
+                >
+                <input
+                  type="number"
+                  id="totalRoundTime"
+                  value="15"
+                  class="w-full bg-gray-200 border border-gray-300 rounded px-2 py-1 text-gray-900 focus:outline-none"
+                />
+              </div>
+            </div>
+          </div>
+
+          <button
+            onclick="initializeRoundFlow()"
+            class="w-full bg-blue-600 hover:bg-blue-700 text-white font-bold py-2 rounded text-xs transition tracking-wide"
+          >
+            Iniciar Ronda
+          </button>
+        </div>
+
+        <div class="border-t border-gray-300 pt-3 mt-4">
+          <div class="grid grid-cols-2 gap-2 mb-3">
+            <button
+              onclick="closeSession()"
+              class="bg-red-600 hover:bg-red-700 text-white font-medium py-2 rounded text-xs transition"
+            >
+              Cerrar Sesión
+            </button>
+            <button
+              onclick="advanceNextInQueue()"
+              class="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded text-xs transition"
+            >
+              Siguiente
+            </button>
+          </div>
+          <div
+            id="profesorStatus"
+            class="text-[10px] bg-gray-100 p-2 rounded text-gray-500 font-mono h-16 overflow-y-auto"
+          >
+            Terminal lista...
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white p-5 rounded-lg border border-gray-200">
+        <h2
+          class="text-lg font-semibold mb-4 text-gray-700 border-b border-gray-300 pb-2"
+        >
+          3. Registro de Resultados
+        </h2>
+        <div class="mb-2">
+          <button
+            onclick="fetchDatabaseReport()"
+            class="w-full bg-gray-500 hover:bg-gray-600 text-white font-medium py-1 rounded text-xs transition"
+          >
+            Consultar Registros
+          </button>
+        </div>
+
+        <div
+          class="overflow-x-auto text-[11px] max-h-[380px] overflow-y-auto rounded border border-gray-300"
+        >
+          <table class="w-full text-left table-auto">
+            <thead
+              class="bg-gray-100 text-gray-500 sticky top-0 font-mono text-[10px]"
+            >
+              <tr>
+                <th class="p-2 border-b border-gray-300">
+                  Estudiante / Pregunta
+                </th>
+                <th class="p-2 border-b border-gray-300 text-center">Sesión</th>
+                <th class="p-2 border-b border-gray-300 text-center">
+                  Rendimiento
+                </th>
+                <th class="p-2 border-b border-gray-300 text-center">
+                  Tiempo Cognitivo
+                </th>
+                <th class="p-2 border-b border-gray-300 text-center">
+                  Tiempo Total
+                </th>
+                <th class="p-2 border-b border-gray-300 text-right">Puntaje</th>
+                <th
+                  class="p-2 border-b border-gray-300 text-gray-400 text-right"
+                >
+                  Latencia Wi-Fi
+                </th>
+              </tr>
+            </thead>
+            <tbody
+              id="databaseTableBody"
+              class="divide-y divide-gray-200 bg-white"
+            >
+              <tr>
+                <td colspan="7" class="p-4 text-center text-gray-400">
+                  Sin extraer datos de consistencia temporal.
+                </td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+      <div class="bg-white p-4 rounded-lg border border-gray-200">
+        <h3
+          class="text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider font-mono"
+        >
+          Alumnos en la Reunion (<span id="connectedCount">0</span>)
+        </h3>
+        <div
+          id="lobbyContainer"
+          class="flex flex-wrap gap-2 max-h-36 overflow-y-auto p-2 bg-gray-100 rounded border border-gray-200"
+        >
+          <span class="text-xs text-gray-400 italic"
+            >Esperando ingresos desde visores VR...</span
+          >
+        </div>
+      </div>
+
+      <div
+        class="bg-white p-4 rounded-lg border border-gray-200 flex flex-col justify-between"
+      >
+        <div>
+          <h3
+            class="text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider font-mono"
+          >
+            Respuestas Recibidas (<span id="answeredCount">0</span>)
+          </h3>
+          <div
+            id="answersFeed"
+            class="text-[11px] font-mono text-gray-500 space-y-1 h-24 overflow-y-auto bg-gray-50 p-2 rounded border border-gray-200"
+          >
+            <span class="text-gray-400 italic"
+              >Esperando triggers críticos...</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <div class="bg-white p-4 rounded-lg border border-gray-200">
+        <h3
+          class="text-sm font-bold text-gray-700 mb-2 uppercase tracking-wider font-mono"
+        >
+          Estado de la Ronda
+        </h3>
+        <div
+          id="roundStatus"
+          class="text-xs text-gray-500 font-mono p-2 bg-gray-50 rounded border border-gray-200"
+        >
+          Sin ronda activa.
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const BACKEND_URL = 'http://localhost:3000';
+      let socket;
+      let studentsInRoom = new Set();
+      let answeredStudents = new Set();
+
+      let exerciseCategories = ['', ''];
+      let exerciseItems = [
+        { content: '', categoryIndex: 0 },
+        { content: '', categoryIndex: 0 },
+        { content: '', categoryIndex: 0 },
+      ];
+
+      function renderCategoryInputs() {
+        const container = document.getElementById('categoryInputs');
+        container.innerHTML = exerciseCategories
+          .map(
+            (cat, i) => `
+                <div class="flex gap-1 items-center">
+                  <span class="text-[10px] text-gray-400 w-4">${i}.</span>
+                  <input type="text" class="cat-name flex-1 bg-gray-200 border border-gray-300 rounded px-2 py-1 text-xs text-gray-900 focus:outline-none" value="${escapeHtml(cat)}" placeholder="Nombre concepto" data-index="${i}" />
+                  ${
+                    exerciseCategories.length > 1
+                      ? `<button onclick="removeCategory(${i})" class="text-red-500 text-xs px-1 hover:text-red-700">X</button>`
+                      : ''
+                  }
+                </div>
+              `,
+          )
+          .join('');
+
+        container.querySelectorAll('.cat-name').forEach((input) => {
+          input.addEventListener('input', (e) => {
+            const idx = parseInt(e.target.dataset.index);
+            exerciseCategories[idx] = e.target.value;
+          });
+        });
+
+        renderItemInputs();
+      }
+
+      function renderItemInputs() {
+        const container = document.getElementById('itemInputs');
+        container.innerHTML = exerciseItems
+          .map(
+            (item, i) => `
+                <div class="flex gap-1 items-center">
+<input type="text" class="item-content flex-1 bg-gray-200 border border-gray-300 rounded px-2 py-1 text-xs text-gray-900 focus:outline-none" value="${escapeHtml(item.content)}" placeholder="Descripcion" data-index="${i}" />
+<select class="item-category bg-gray-200 border border-gray-300 rounded px-1 py-1 text-xs text-gray-900 focus:outline-none" data-index="${i}">
+  ${exerciseCategories
+    .map(
+      (cat, ci) =>
+        `<option value="${ci}" ${
+          ci === item.categoryIndex ? 'selected' : ''
+        }>${cat || ci}</option>`,
+    )
+    .join('')}
+</select>
+                  ${
+                    exerciseItems.length > 1
+                      ? `<button onclick="removeItem(${i})" class="text-red-500 text-xs px-1 hover:text-red-700">X</button>`
+                      : ''
+                  }
+                </div>
+              `,
+          )
+          .join('');
+
+        container.querySelectorAll('.item-content').forEach((input) => {
+          input.addEventListener('input', (e) => {
+            const idx = parseInt(e.target.dataset.index);
+            exerciseItems[idx].content = e.target.value;
+          });
+        });
+
+        container.querySelectorAll('.item-category').forEach((select) => {
+          select.addEventListener('change', (e) => {
+            const idx = parseInt(e.target.dataset.index);
+            exerciseItems[idx].categoryIndex = parseInt(e.target.value);
+          });
+        });
+      }
+
+      function addCategory() {
+        exerciseCategories.push('');
+        renderCategoryInputs();
+      }
+
+      function removeCategory(index) {
+        if (exerciseCategories.length <= 1) return;
+        exerciseCategories.splice(index, 1);
+        exerciseItems.forEach((item) => {
+          if (item.categoryIndex > index) {
+            item.categoryIndex--;
+          } else if (item.categoryIndex === index) {
+            item.categoryIndex = 0;
+          }
+        });
+        renderCategoryInputs();
+      }
+
+      function addItem() {
+        exerciseItems.push({ content: '', categoryIndex: 0 });
+        renderItemInputs();
+      }
+
+      function removeItem(index) {
+        if (exerciseItems.length <= 1) return;
+        exerciseItems.splice(index, 1);
+        renderItemInputs();
+      }
+
+      function connectAsProfessor() {
+        const sessionId = parseInt(
+          document.getElementById('targetSessionId').value,
+          10,
+        );
+        if (!sessionId) return alert('Especifica una sala');
+        if (socket) socket.disconnect();
+        socket = io(BACKEND_URL);
+
+        socket.on('connect', () => {
+          logProfesor(
+            `Conectado al canal WebSocket. Escuchando Sala ${sessionId}`,
+          );
+          socket.emit('LOGIN_PLAYER', {
+            studentId: 'CONSOLA_PROFESOR',
+            sessionId: sessionId,
+          });
+        });
+
+        socket.on('STUDENT_JOINED', (data) => {
+          if (data.studentId === 'CONSOLA_PROFESOR') return;
+          studentsInRoom.add(data.studentId);
+          updateLobbyUI();
+        });
+
+        socket.on('STUDENT_ANSWERED', (data) => {
+          if (answeredStudents.has(data.studentId)) return;
+          answeredStudents.add(data.studentId);
+          updateAnswersUI(data.studentId);
+        });
+
+        socket.on('ROUND_ADVANCED', (data) => {
+          clearRoundCounters();
+          if (data.status === 'question_active') {
+            logProfesor(`Auto-avance. Ejercicio activo ID: ${data.questionId}`);
+          } else {
+            logProfesor(`Ronda finalizada: ${data.reason || data.status}`);
+          }
+          fetchDatabaseReport();
+        });
+      }
+
+      function updateLobbyUI() {
+        document.getElementById('connectedCount').textContent =
+          studentsInRoom.size;
+        const container = document.getElementById('lobbyContainer');
+        if (studentsInRoom.size === 0) {
+          container.innerHTML =
+            '<span class="text-gray-400 italic">Vacio...</span>';
+          return;
+        }
+        container.innerHTML = Array.from(studentsInRoom)
+          .map(
+            (id) => `
+                <span class="bg-blue-50 border border-blue-300 text-blue-600 text-[11px] font-mono px-2 py-0.5 rounded shadow-sm">${id}</span>
+            `,
+          )
+          .join('');
+      }
+
+      function updateAnswersUI(studentId) {
+        document.getElementById('answeredCount').textContent =
+          answeredStudents.size;
+        const feed = document.getElementById('answersFeed');
+        if (answeredStudents.size === 1) feed.innerHTML = '';
+        feed.innerHTML += `<div class="text-gray-700">&gt; <span class="text-gray-400">${studentId}</span> ha enviado su clasificacion.</div>`;
+        feed.scrollTop = feed.scrollHeight;
+      }
+
+      function clearRoundCounters() {
+        answeredStudents.clear();
+        document.getElementById('answeredCount').textContent = '0';
+        document.getElementById('answersFeed').innerHTML =
+          '<span class="text-gray-400 italic">Nueva ronda iniciada...</span>';
+      }
+
+      async function initializeRoundFlow() {
+        clearRoundCounters();
+        const payload = {
+          sessionId: parseInt(
+            document.getElementById('targetSessionId').value,
+            10,
+          ),
+          questionIds: document
+            .getElementById('roundQueueInput')
+            .value.split(',')
+            .map((id) => parseInt(id.trim(), 10)),
+          timePerQuestionSeconds: parseInt(
+            document.getElementById('timePerQuestion').value,
+            10,
+          ),
+          totalRoundTimeMinutes: parseInt(
+            document.getElementById('totalRoundTime').value,
+            10,
+          ),
+        };
+        try {
+          const response = await fetch(
+            `${BACKEND_URL}/gamification/start-round-flow`,
+            {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify(payload),
+            },
+          );
+          const data = await response.json();
+          logProfesor(
+            `Ronda Iniciada. Pregunta en curso ID: ${data.questionId}`,
+          );
+        } catch (e) {
+          logProfesor('Error.');
+        }
+      }
+
+      async function advanceNextInQueue() {
+        clearRoundCounters();
+        try {
+          const response = await fetch(
+            `${BACKEND_URL}/gamification/next-question`,
+            { method: 'POST' },
+          );
+          const data = await response.json();
+          if (data.status === 'question_active') {
+            logProfesor(
+              `Avanzado en cola. Pregunta Activa ID: ${data.questionId}`,
+            );
+          } else {
+            logProfesor(`Fin de la secuencia.`);
+          }
+          fetchDatabaseReport();
+        } catch (e) {
+          logProfesor('Error.');
+        }
+      }
+
+      async function submitExerciseForm() {
+        const editId = document.getElementById('editExerciseId').value;
+        const title = document.getElementById('exTitle').value;
+        const payload = {
+          title: title,
+          categories: exerciseCategories.map((name) => ({ name })),
+          items: exerciseItems.map((item) => ({
+            textContent: item.content,
+            correctCategoryIndex: item.categoryIndex,
+          })),
+        };
+        const url = editId
+          ? `${BACKEND_URL}/content/exercise/${editId}`
+          : `${BACKEND_URL}/content/exercise`;
+        const method = editId ? 'PATCH' : 'POST';
+        try {
+          const res = await fetch(url, {
+            method: method,
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+          });
+          if (!res.ok) {
+            const errText = await res.text();
+            logProfesor(`Error HTTP ${res.status}: ${errText}`);
+            return;
+          }
+          const saved = await res.json();
+          logProfesor(
+            editId
+              ? `Ejercicio ID ${editId} modificado (${saved.categories?.length || 0} conceptos, ${(saved.items || []).length} descripciones).`
+              : `Ejercicio ID ${saved.id} creado (${saved.categories?.length || 0} conceptos, ${(saved.items || []).length} descripciones).`,
+          );
+          clearForm();
+          fetchExercises();
+        } catch (e) {
+          logProfesor('Error: ' + (e.message || e));
+        }
+      }
+
+      async function fetchExercises() {
+        try {
+          const response = await fetch(`${BACKEND_URL}/content/exercises`);
+          const exercises = await response.json();
+          const container = document.getElementById('exercisesList');
+          container.innerHTML = exercises
+            .map(
+              (ex) => `
+                  <div onclick="loadExerciseToEdit(${ex.id})" class="p-1 bg-white border border-gray-300 rounded mb-1 cursor-pointer hover:border-blue-500 transition">
+                    <span class="text-blue-600 font-bold">[ID ${ex.id}]</span> ${escapeHtml(ex.title)}
+                    <span class="text-gray-400 text-[9px]"> (${ex.categories?.length || 0} conceptos, ${(ex.items || []).length} descripciones)</span>
+                  </div>
+                `,
+            )
+            .join('');
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      async function loadExerciseToEdit(id) {
+        try {
+          const response = await fetch(`${BACKEND_URL}/content/exercise/${id}`);
+          const ex = await response.json();
+          document.getElementById('editExerciseId').value = ex.id;
+          document.getElementById('exTitle').value = ex.title;
+          document.getElementById('formActionTitle').textContent =
+            `1. Editar Ejercicio ID: ${ex.id}`;
+          exerciseCategories = (ex.categories || []).map((c) => c.name);
+          exerciseItems = (ex.items || []).map((item) => {
+            const idx = (ex.categories || []).findIndex(
+              (c) => c.id === item.correctCategoryId,
+            );
+            return {
+              content: item.textContent,
+              categoryIndex: idx >= 0 ? idx : 0,
+            };
+          });
+          renderCategoryInputs();
+        } catch (e) {
+          console.error(e);
+        }
+      }
+
+      function clearForm() {
+        document.getElementById('editExerciseId').value = '';
+        document.getElementById('exTitle').value = '';
+        document.getElementById('formActionTitle').textContent =
+          '1. Crear Ejercicio';
+        exerciseCategories = ['', ''];
+        exerciseItems = [
+          { content: '', categoryIndex: 0 },
+          { content: '', categoryIndex: 0 },
+          { content: '', categoryIndex: 0 },
+        ];
+        renderCategoryInputs();
+      }
+
+      async function createSession() {
+        const name = document.getElementById('sessionName').value;
+        try {
+          const response = await fetch(`${BACKEND_URL}/gamification/session`, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ name }),
+          });
+          const data = await response.json();
+          document.getElementById('targetSessionId').value = data.id;
+          logProfesor(`Sala Creada ID: ${data.id}. Vincula el Websocket.`);
+          connectAsProfessor();
+        } catch (e) {
+          logProfesor('Error.');
+        }
+      }
+
+      async function closeSession() {
+        const sessionId = parseInt(
+          document.getElementById('targetSessionId').value,
+          10,
+        );
+        if (!sessionId) return alert('Especifica una sala');
+        try {
+          await fetch(
+            `${BACKEND_URL}/gamification/close-session/${sessionId}`,
+            { method: 'POST' },
+          );
+          logProfesor(
+            `Sesión ${sessionId} cerrada. Resultados consolidados en Postgres.`,
+          );
+          fetchDatabaseReport();
+        } catch (e) {
+          logProfesor('Error.');
+        }
+      }
+
+      async function fetchDatabaseReport() {
+        try {
+          const response = await fetch(`${BACKEND_URL}/statistics/report`);
+          const logs = await response.json();
+          const tbody = document.getElementById('databaseTableBody');
+
+          if (logs.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="6" class="p-4 text-center text-gray-400">Sin extraer datos de consistencia temporal.</td></tr>`;
+            return;
+          }
+
+          tbody.innerHTML = logs
+            .map((log) => {
+              const badgeColor = log.isCorrect
+                ? 'bg-white text-gray-700 border border-gray-300'
+                : 'bg-white text-gray-700 border border-gray-300';
+              const evaluationText = log.isCorrect ? 'CORRECTA' : 'INCORRECTA';
+
+              let responseTimeText = '0.00';
+              if (log.responseTimeSeconds !== undefined) {
+                responseTimeText = log.responseTimeSeconds + ' segs';
+              } else if (log.arrivalTimestamp && log.clientTimestamp) {
+                const estimatedSeconds = Math.max(
+                  (log.clientTimestamp % 60000) / 1000,
+                  0.5,
+                );
+                responseTimeText =
+                  parseFloat(estimatedSeconds.toFixed(2)) + ' segs';
+              } else {
+                responseTimeText = 'N/D';
+              }
+
+              const selectedAltDisplay = log.selectedAlternative
+                ? typeof log.selectedAlternative === 'object'
+                  ? JSON.stringify(log.selectedAlternative)
+                  : log.selectedAlternative
+                : 'N/A';
+
+              return `
+                        <tr class="hover:bg-gray-100 transition border-b border-gray-200 bg-gray-50 font-mono text-[11px]">
+                            <td class="p-3 text-gray-700">
+                                <span class="text-[8px] text-gray-400 block uppercase font-sans">Alumno:</span>
+                                <div class="font-bold text-xs text-gray-700">${log.playerId}</div>
+                                <div class="text-[10px] text-gray-400 mt-0.5">Ejercicio: <span class="text-gray-900 font-bold">#${log.questionId}</span></div>
+                            </td>
+                            <td class="p-3 text-center">
+                                <span class="text-[8px] text-gray-400 block uppercase font-sans">Sesión:</span>
+                                <div class="text-xs font-bold text-gray-700">#${log.sessionId}</div>
+                            </td>
+                            <td class="p-3 text-center">
+                                <span class="text-[8px] text-gray-400 block uppercase font-sans mb-1">Evaluación:</span>
+                                <span class="px-2 py-0.5 rounded text-[10px] font-bold ${badgeColor}">
+                                    ${evaluationText}
+                                </span>
+                                <div class="text-[10px] text-gray-400 mt-1">Marcó: <span class="text-gray-900 font-bold">${selectedAltDisplay}</span></div>
+                            </td>
+                            <td class="p-3 text-center">
+                                <span class="text-[8px] text-gray-400 block uppercase font-sans">Decisión Humana:</span>
+                                <div class="text-xs font-bold text-gray-700">${responseTimeText}</div>
+                                <div class="text-[9px] text-gray-400 mt-0.5">Orden: ${log.positionInGame}</div>
+                            </td>
+                            <td class="p-3 text-center">
+                                <span class="text-[8px] text-gray-400 block uppercase font-sans">Tiempo Total Sesión:</span>
+                                <div class="text-xs font-bold text-gray-700">${log.totalTimeSeconds || 'N/A'} segs</div>
+                            </td>
+                            <td class="p-3 text-right">
+                                <span class="text-[8px] text-gray-400 block uppercase font-sans">Recompensa:</span>
+                                <div class="text-xs font-bold text-gray-700">${log.scoreObtained} pts</div>
+                            </td>
+                            <td class="p-3 text-right">
+                                <span class="text-[8px] text-gray-400 block uppercase font-sans">Latencia Red:</span>
+                                <div class="text-xs font-bold text-gray-700">${log.compensatedLagMs} ms</div>
+                            </td>
+                        </tr>
+                    `;
+            })
+            .join('');
+        } catch (e) {
+          console.error('Error al extraer el reporte analítico:', e);
+        }
+      }
+
+      function escapeHtml(str) {
+        if (!str) return '';
+        return String(str)
+          .replace(/&/g, '&amp;')
+          .replace(/"/g, '&quot;')
+          .replace(/'/g, '&#39;')
+          .replace(/</g, '&lt;')
+          .replace(/>/g, '&gt;');
+      }
+
+      function logProfesor(msg) {
+        const div = document.getElementById('profesorStatus');
+        div.innerHTML += `<div>&gt; ${msg}</div>`;
+        div.scrollTop = div.scrollHeight;
+      }
+
+      window.onload = () => {
+        renderCategoryInputs();
+        fetchExercises();
+        fetchDatabaseReport();
+      };
+    </script>
+  </body>
+</html>
