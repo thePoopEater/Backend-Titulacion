@@ -12,7 +12,11 @@ import { LatencyLogEntity } from 'src/statistics/entities/latency-log.entity';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([GameSessionEntity, SessionQuestionEntity,LatencyLogEntity]),
+    TypeOrmModule.forFeature([
+      GameSessionEntity,
+      SessionQuestionEntity,
+      LatencyLogEntity,
+    ]),
     ContentModule,
     forwardRef(() => StatisticsModule),
   ],

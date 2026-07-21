@@ -7,13 +7,18 @@ export class GamificationHttpController {
 
   @Post('submit')
   async handleSubmitHttp(
-    @Body() body: { socketId: string; placements: Record<number, number>; clientTimestamp: number }
+    @Body()
+    body: {
+      socketId: string;
+      placements: Record<number, number>;
+      clientTimestamp: number;
+    },
   ) {
     return await this.gamificationService.registerPlayerResponse(
       body.socketId,
       body.placements,
       body.clientTimestamp,
-      'HTTP'
+      'HTTP',
     );
   }
 }

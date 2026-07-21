@@ -25,8 +25,8 @@ export interface VRResponse {
   placements: Record<number, number>;
   clientTimestamp: number;
   arrivalTimestamp: number;
-  networkLag: number;     
-  decisionTime: number;   
+  networkLag: number;
+  decisionTime: number;
 }
 
 @Injectable()
@@ -250,7 +250,7 @@ export class GamificationService {
 
   async registerPlayerResponse(
     socketId: string,
-    placements: Record<number, number>, 
+    placements: Record<number, number>,
     clientTimestamp: number,
     protocol: 'WS' | 'HTTP' = 'WS',
   ) {
@@ -275,25 +275,35 @@ export class GamificationService {
     }
 
     // === 1. CAPTURA DEL TIEMPO EN EL SERVIDOR ===
-    const arrivalTimestamp = Date.now(); 
+    const arrivalTimestamp = Date.now();
 
     if (!this.studentSessionStartTimes.has(player.studentId)) {
       this.studentSessionStartTimes.set(player.studentId, clientTimestamp);
     }
 
     // === 2. EVALUACIÓN ACADÉMICA ===
-    const items: any[] = (this.currentExercise as any)?.items || [];
-    const categories: any[] = (this.currentExercise as any)?.categories || [];
+    const items: any[] = this.currentExercise?.items || [];
+    const categories: any[] = this.currentExercise?.categories || [];
     const categoryMap = new Map<number, string>();
     for (const c of categories) categoryMap.set(c.id, c.name);
 
     let correctCount = 0;
-    const itemResults: { itemId: number; textContent: string; correctCategoryId: number; correctCategoryName: string; placedCategoryId: number | null; placedCategoryName: string | null; isCorrect: boolean }[] = [];
+    const itemResults: {
+      itemId: number;
+      textContent: string;
+      correctCategoryId: number;
+      correctCategoryName: string;
+      placedCategoryId: number | null;
+      placedCategoryName: string | null;
+      isCorrect: boolean;
+    }[] = [];
     for (const item of items) {
       const placedCategoryId = placements[item.id] ?? null;
       const isItemCorrect = placedCategoryId === item.correctCategoryId;
       if (isItemCorrect) correctCount++;
-      const placedCategoryName = placedCategoryId ? categoryMap.get(placedCategoryId) ?? null : null;
+      const placedCategoryName = placedCategoryId
+        ? (categoryMap.get(placedCategoryId) ?? null)
+        : null;
       itemResults.push({
         itemId: item.id,
         textContent: item.textContent,
@@ -317,7 +327,7 @@ export class GamificationService {
     // Buscamos el inicio exacto desde la tabla puente sessionQuestion
     const sessionQuestion = await this.sessionQuestionRepository.findOne({
       where: {
-        session: { id: this.currentSessionId! },
+        session: { id: this.currentSessionId },
         exercise: { id: this.currentExerciseId! },
       },
     });
@@ -325,7 +335,10 @@ export class GamificationService {
       ? new Date(sessionQuestion.startedAt).getTime()
       : Date.now();
 
-    const decisionTimeSec = Math.max((clientTimestamp - exerciseStartedTime) / 1000, 0);
+    const decisionTimeSec = Math.max(
+      (clientTimestamp - exerciseStartedTime) / 1000,
+      0,
+    );
 
     // === 4. RESPALDO EN MEMORIA VOLÁTIL ===
     this.activeRoundResponses.push({
@@ -340,10 +353,10 @@ export class GamificationService {
     // === 5. PRIMERA PERSISTENCIA EN POSTGRESQL (Docker) ===
     try {
       await this.latencyRepository.save({
-        sessionId: this.currentSessionId!,
+        sessionId: this.currentSessionId,
         questionId: this.currentExerciseId!,
         playerId: player.studentId,
-        selectedAlternative, 
+        selectedAlternative,
         scoreObtained: score,
         isCorrect: isCorrect,
         positionInGame: 0, // Se actualizará al final de la ronda de forma justa
@@ -442,12 +455,22 @@ export class GamificationService {
 
     const roundSummary = sortedResponses.map((resp, index) => {
       let correctCount = 0;
-      const itemResults: { itemId: number; textContent: string; correctCategoryId: number; correctCategoryName: string; placedCategoryId: number | null; placedCategoryName: string | null; isCorrect: boolean }[] = [];
+      const itemResults: {
+        itemId: number;
+        textContent: string;
+        correctCategoryId: number;
+        correctCategoryName: string;
+        placedCategoryId: number | null;
+        placedCategoryName: string | null;
+        isCorrect: boolean;
+      }[] = [];
       for (const item of items) {
         const placedCategoryId = resp.placements[item.id] ?? null;
         const isItemCorrect = placedCategoryId === item.correctCategoryId;
         if (isItemCorrect) correctCount++;
-        const placedCategoryName = placedCategoryId ? categoryMap.get(placedCategoryId) ?? null : null;
+        const placedCategoryName = placedCategoryId
+          ? (categoryMap.get(placedCategoryId) ?? null)
+          : null;
         itemResults.push({
           itemId: item.id,
           textContent: item.textContent,
@@ -458,7 +481,7 @@ export class GamificationService {
           isCorrect: isItemCorrect,
         });
       }
-    const selectedAlternative = JSON.stringify(itemResults);
+      const selectedAlternative = JSON.stringify(itemResults);
       const totalItems = items.length || 1;
       const score = Math.floor((correctCount / totalItems) * 1000);
 
@@ -553,7 +576,10 @@ export class GamificationService {
       if (player.sessionId !== sessionId) continue;
       const studentLogs = logs.filter((l) => l.playerId === player.studentId);
       const totalScore = studentLogs.reduce((s, l) => s + l.scoreObtained, 0);
-      const totalTime = studentLogs.length > 0 ? studentLogs[studentLogs.length - 1].totalTimeSeconds : 0;
+      const totalTime =
+        studentLogs.length > 0
+          ? studentLogs[studentLogs.length - 1].totalTimeSeconds
+          : 0;
 
       this.gamificationGateway.emitToSocket(socketId, 'ROUND_FINAL_SUMMARY', {
         reason,

@@ -25,7 +25,11 @@ export class ContentService {
     const saved = await this.exerciseRepository.save(exercise);
 
     const categories = dto.categories.map((cat: any) =>
-      this.categoryRepository.create({ name: cat.name, descripcion: cat.descripcion || null, exerciseId: saved.id }),
+      this.categoryRepository.create({
+        name: cat.name,
+        descripcion: cat.descripcion || null,
+        exerciseId: saved.id,
+      }),
     );
     const savedCategories = await this.categoryRepository.save(categories);
 
@@ -80,7 +84,11 @@ export class ContentService {
     if (dto.categories) {
       await this.categoryRepository.delete({ exerciseId: id });
       const categories = dto.categories.map((cat: any) =>
-        this.categoryRepository.create({ name: cat.name, descripcion: cat.descripcion || null, exerciseId: id }),
+        this.categoryRepository.create({
+          name: cat.name,
+          descripcion: cat.descripcion || null,
+          exerciseId: id,
+        }),
       );
       await this.categoryRepository.save(categories);
     }

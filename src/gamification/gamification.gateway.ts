@@ -85,13 +85,23 @@ export class GamificationGateway
     @ConnectedSocket() client: WebSocket,
   ) {
     const clientId = this.getId(client);
-    console.log(`[GATEWAY] LOGIN_PLAYER recibido:`, JSON.stringify(data, null, 2));
+    console.log(
+      `[GATEWAY] LOGIN_PLAYER recibido:`,
+      JSON.stringify(data, null, 2),
+    );
     const registration = this.gamificationService.registerPlayerSocket(
       clientId,
       data,
     );
 
-    console.log(`[GATEWAY] Emitiendo STUDENT_JOINED a sesion ${data.sessionId}:`, JSON.stringify({ studentId: data.studentId, socketId: clientId }, null, 2));
+    console.log(
+      `[GATEWAY] Emitiendo STUDENT_JOINED a sesion ${data.sessionId}:`,
+      JSON.stringify(
+        { studentId: data.studentId, socketId: clientId },
+        null,
+        2,
+      ),
+    );
     this.sendToSession(data.sessionId, 'STUDENT_JOINED', {
       studentId: data.studentId,
       socketId: clientId,
@@ -131,7 +141,10 @@ export class GamificationGateway
     @ConnectedSocket() client: WebSocket,
   ) {
     const clientId = this.getId(client);
-    console.log(`[GATEWAY] SUBMIT_RESPONSE recibido de ${clientId}:`, JSON.stringify(data, null, 2));
+    console.log(
+      `[GATEWAY] SUBMIT_RESPONSE recibido de ${clientId}:`,
+      JSON.stringify(data, null, 2),
+    );
     const response = await this.gamificationService.registerPlayerResponse(
       clientId,
       data.placements,
@@ -142,7 +155,10 @@ export class GamificationGateway
     if (response.status === 'registered') {
       const playerInfo = this.gamificationService.activePlayers.get(clientId);
       if (playerInfo) {
-        console.log(`[GATEWAY] Emitiendo STUDENT_ANSWERED a sesion ${playerInfo.sessionId}:`, JSON.stringify({ studentId: playerInfo.studentId }, null, 2));
+        console.log(
+          `[GATEWAY] Emitiendo STUDENT_ANSWERED a sesion ${playerInfo.sessionId}:`,
+          JSON.stringify({ studentId: playerInfo.studentId }, null, 2),
+        );
         this.sendToSession(playerInfo.sessionId, 'STUDENT_ANSWERED', {
           studentId: playerInfo.studentId,
         });
@@ -171,22 +187,34 @@ export class GamificationGateway
 
   @SubscribeMessage('TRACKING_DATA')
   handleTrackingData(@MessageBody() data: any) {
-    console.log(`[GATEWAY] TRACKING_DATA recibido:`, JSON.stringify(data, null, 2));
+    console.log(
+      `[GATEWAY] TRACKING_DATA recibido:`,
+      JSON.stringify(data, null, 2),
+    );
     return;
   }
 
   emitQuestionToRoom(sessionId: number, questionData: any) {
-    console.log(`[GATEWAY] Emitiendo NEW_QUESTION_LOADED a sesion ${sessionId}:`, JSON.stringify(questionData, null, 2));
+    console.log(
+      `[GATEWAY] Emitiendo NEW_QUESTION_LOADED a sesion ${sessionId}:`,
+      JSON.stringify(questionData, null, 2),
+    );
     this.sendToSession(sessionId, 'NEW_QUESTION_LOADED', questionData);
   }
 
   emitToSession(sessionId: number, event: string, data: any) {
-    console.log(`[GATEWAY] Emitiendo ${event} a sesion ${sessionId}:`, JSON.stringify(data, null, 2));
+    console.log(
+      `[GATEWAY] Emitiendo ${event} a sesion ${sessionId}:`,
+      JSON.stringify(data, null, 2),
+    );
     this.sendToSession(sessionId, event, data);
   }
 
   emitToSocket(socketId: string, event: string, data: any) {
-    console.log(`[GATEWAY] Emitiendo ${event} a socket ${socketId}:`, JSON.stringify(data, null, 2));
+    console.log(
+      `[GATEWAY] Emitiendo ${event} a socket ${socketId}:`,
+      JSON.stringify(data, null, 2),
+    );
     this.sendToSocket(socketId, event, data);
   }
 }

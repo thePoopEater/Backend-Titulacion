@@ -2,7 +2,7 @@
 services:
   postgres-db:
     image: postgres:15-alpine
-    container_name: vrkahoot_db
+    container_name: db
     environment:
       POSTGRES_USER: vr_user
       POSTGRES_PASSWORD: vr_secure_password
@@ -17,7 +17,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    container_name: vrkahoot_backend
+    container_name: nestjs_backend
     ports:
       - "3000:3000"
     environment:
