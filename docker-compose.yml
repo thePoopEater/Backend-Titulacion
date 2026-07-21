@@ -1,0 +1,36 @@
+
+services:
+  postgres-db:
+    image: postgres:15-alpine
+    container_name: vrkahoot_db
+    environment:
+      POSTGRES_USER: vr_user
+      POSTGRES_PASSWORD: vr_secure_password
+      POSTGRES_DB: vr_kahoot_db
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    restart: always
+
+  nestjs-server:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: vrkahoot_backend
+    ports:
+      - "3000:3000"
+    environment:
+      - NODE_ENV=production
+      - PORT=3000
+      - DB_HOST=postgres-db
+      - DB_PORT=5432
+      - DB_USERNAME=vr_user
+      - DB_PASSWORD=vr_secure_password
+      - DB_NAME=vr_kahoot_db
+    depends_on:
+      - postgres-db
+    restart: always
+
+volumes:
+  pgdata:
