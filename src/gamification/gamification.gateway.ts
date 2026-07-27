@@ -27,6 +27,8 @@ export class GamificationGateway
   private socketIndex = 0;
   private socketIds = new WeakMap<WebSocket, string>();
   private sockets = new Map<string, WebSocket>();
+  private clientSessions = new Map<WebSocket, { studentId: string; sessionId: number }>();
+  private lastLogTimes = new Map<string, number>();
 
   constructor(
     @Inject(forwardRef(() => GamificationService))
@@ -76,6 +78,7 @@ export class GamificationGateway
     this.gamificationService.removePlayerSocket(id);
     this.sockets.delete(id);
     this.socketIds.delete(client);
+    this.clientSessions.delete(client);
     console.log(`[SOCKET] Conexion liberada: ID ${id}`);
   }
 
@@ -89,6 +92,12 @@ export class GamificationGateway
       `[GATEWAY] LOGIN_PLAYER recibido:`,
       JSON.stringify(data, null, 2),
     );
+    this.clientSessions.set(client, {
+      studentId: data.studentId,
+      sessionId: data.sessionId,
+    });
+    (client as any).sessionId = data.sessionId;
+    (client as any).studentId = data.studentId;
     const registration = this.gamificationService.registerPlayerSocket(
       clientId,
       data,
@@ -186,12 +195,52 @@ export class GamificationGateway
   }
 
   @SubscribeMessage('TRACKING_DATA')
-  handleTrackingData(@MessageBody() data: any) {
-    console.log(
-      `[GATEWAY] TRACKING_DATA recibido:`,
-      JSON.stringify(data, null, 2),
-    );
-    return;
+  handleTracking(
+    @ConnectedSocket() client: any,
+    @MessageBody() body: any,
+  ) {
+    let parsedBody = body;
+    if (typeof body === 'string') {
+      try {
+        parsedBody = JSON.parse(body);
+      } catch (e) {
+        // Ignorar si no es JSON válido
+      }
+    }
+
+    // Extraemos los datos del payload que envía Unity o los bots
+    const data = parsedBody && parsedBody.data ? parsedBody.data : parsedBody;
+    if (!data) return;
+
+    const playerId = data.playerId;
+    const sessionId = data.sessionId;
+    const x = data.x;
+    const y = data.y;
+    const z = data.z;
+
+    const now = Date.now();
+    const lastLog = this.lastLogTimes.get(playerId) || 0;
+    if (now - lastLog > 2000) {
+      console.log(
+        `[GATEWAY] TRACKING_DATA de ${playerId}: ${JSON.stringify({ playerId, sessionId, x, y, z })}`,
+      );
+      this.lastLogTimes.set(playerId, now);
+    }
+
+    // Hacemos el Relay (Broadcast) a todos los demás clientes de la misma sesión
+    this.server.clients.forEach((c: any) => {
+      if (c !== client && c.readyState === WebSocket.OPEN && c.sessionId === sessionId) {
+        c.send(JSON.stringify({
+          event: 'REMOTE_PLAYER_UPDATE',
+          data: {
+            playerId: playerId,
+            x: x,
+            y: y,
+            z: z
+          }
+        }));
+      }
+    });
   }
 
   emitQuestionToRoom(sessionId: number, questionData: any) {
