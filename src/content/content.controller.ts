@@ -42,7 +42,7 @@ export class ContentController {
     return await this.contentService.updateExercise(id, dto);
   }
 
-  @Put('exercise/:id')
+  @Delete('exercise/:id')
   async deleteExercise(@Param('id', ParseIntPipe) id: number) {
     return await this.contentService.deleteExercise(id);
   }
