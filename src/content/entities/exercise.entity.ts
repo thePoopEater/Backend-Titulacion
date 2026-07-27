@@ -21,6 +21,9 @@ export class ExerciseEntity {
   @Column('text', { nullable: true })
   descripcion: string;
 
+  @Column('bool', {default: true})
+  isActive : boolean;
+
   @CreateDateColumn()
   createdAt: Date;
 

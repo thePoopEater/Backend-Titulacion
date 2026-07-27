@@ -1,0 +1,42 @@
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[NestFactory] [39m[32mStarting Nest application...[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +67ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAppModule dependencies initialized[39m[38;5;3m +9ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmCoreModule dependencies initialized[39m[38;5;3m +109ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +3ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mTypeOrmModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mAuthModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mContentModule dependencies initialized[39m[38;5;3m +1ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mStatisticsModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[InstanceLoader] [39m[32mGamificationModule dependencies initialized[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mGamificationGateway subscribed to the "LOGIN_PLAYER" message[39m[38;5;3m +37ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mGamificationGateway subscribed to the "SUBMIT_RESPONSE" message[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[WebSocketsController] [39m[32mGamificationGateway subscribed to the "TRACKING_DATA" message[39m[38;5;3m +1ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAppController {/}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mContentController {/content}:[39m[38;5;3m +1ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/content/exercise, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/content/exercises, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/content/exercise/:id, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/content/exercise/:id, PATCH} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/content/exercise/:id, DELETE} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mGamificationController {/gamification}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/gamification/session, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/gamification/active-sessions, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/gamification/sessions, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/gamification/session/:id, GET} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/gamification/active-question, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/gamification/start-round-flow, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/gamification/next-question, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/gamification/close-session/:id, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mGamificationHttpController {/game-http-benchmark}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/game-http-benchmark/submit, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mStatisticsController {/statistics}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/statistics/trigger-end-round, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/statistics/report, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/statistics/report/session/:sessionId, GET} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RoutesResolver] [39m[32mAuthController {/auth}:[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/login, POST} route[39m[38;5;3m +0ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[RouterExplorer] [39m[32mMapped {/auth/register, POST} route[39m[38;5;3m +1ms[39m
+[32m[Nest] 13224  - [39m07/25/2026, 6:06:06 AM [32m    LOG[39m [38;5;3m[NestApplication] [39m[32mNest application successfully started[39m[38;5;3m +2ms[39m

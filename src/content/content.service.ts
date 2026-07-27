@@ -21,6 +21,7 @@ export class ContentService {
       title: dto.title,
       asignatura: dto.asignatura || null,
       descripcion: dto.descripcion || null,
+      isActive : true
     });
     const saved = await this.exerciseRepository.save(exercise);
 
@@ -63,7 +64,8 @@ export class ContentService {
     const exercises = await this.exerciseRepository.find({
       relations: { categories: true },
       order: { id: 'ASC' },
-    });
+          where: { isActive: true}
+    },);
     for (const ex of exercises) {
       (ex as any).items = await this.itemRepository.find({
         where: { exerciseId: ex.id },
@@ -107,14 +109,14 @@ export class ContentService {
     }
     return this.getExerciseById(id);
   }
-
+  // ahora solo desactiva
   async deleteExercise(id: number): Promise<void> {
+
     const exercise = await this.exerciseRepository.findOne({ where: { id } });
     if (!exercise) {
       throw new NotFoundException(`Ejercicio ID ${id} no encontrado.`);
     }
-    await this.itemRepository.delete({ exerciseId: id });
-    await this.categoryRepository.delete({ exerciseId: id });
-    await this.exerciseRepository.delete(id);
+    
+    await this.exerciseRepository.update(id,{isActive : false});
   }
 }

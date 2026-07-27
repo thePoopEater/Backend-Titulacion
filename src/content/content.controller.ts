@@ -7,6 +7,7 @@ import {
   Body,
   Param,
   ParseIntPipe,
+  Put
 } from '@nestjs/common';
 import { ContentService } from './content.service';
 import {
@@ -41,7 +42,7 @@ export class ContentController {
     return await this.contentService.updateExercise(id, dto);
   }
 
-  @Delete('exercise/:id')
+  @Put('exercise/:id')
   async deleteExercise(@Param('id', ParseIntPipe) id: number) {
     return await this.contentService.deleteExercise(id);
   }
