@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 import { ExerciseEntity } from './exercise.entity';
 
+/** Categoría de clasificación dentro de un ejercicio. */
 @Entity('categories')
 export class CategoryEntity {
   @PrimaryGeneratedColumn()

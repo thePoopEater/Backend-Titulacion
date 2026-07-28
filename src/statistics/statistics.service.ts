@@ -3,6 +3,11 @@ import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { LatencyLogEntity } from './entities/latency-log.entity';
 
+/**
+ * Servicio de estadísticas y métricas.
+ * Gestiona la persistencia y consulta de latencia,
+ * puntajes y resultados de partidas.
+ */
 @Injectable()
 export class StatisticsService {
   constructor(
@@ -10,6 +15,10 @@ export class StatisticsService {
     private readonly latencyRepository: Repository<LatencyLogEntity>,
   ) {}
 
+  /**
+   * Guarda los resultados de una ronda completa en BD.
+   * Calcula el delay de red como arrivalTimestamp - clientTimestamp.
+   */
   async saveRoundStats(results: any[]): Promise<void> {
     const records = results.map((player) => {
       const networkDelayMs = player.arrivalTimestamp - player.clientTimestamp;
@@ -32,12 +41,14 @@ export class StatisticsService {
     await this.latencyRepository.save(records);
   }
 
+  /** Obtiene todos los registros de métricas, ordenados por fecha descendente. */
   async getMetricsLog(): Promise<LatencyLogEntity[]> {
     return await this.latencyRepository.find({
       order: { createdAt: 'DESC' },
     });
   }
 
+  /** Obtiene las métricas filtradas por sesión. */
   async getMetricsBySession(sessionId: number): Promise<LatencyLogEntity[]> {
     return await this.latencyRepository.find({
       where: { sessionId },

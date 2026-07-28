@@ -13,10 +13,18 @@ import { LoginStudentDto } from './dto/game.dto';
 import { Inject, forwardRef } from '@nestjs/common';
 import { ContentService } from '../content/content.service';
 
+/**
+ * Envía un mensaje JSON con evento y datos a un socket WebSocket.
+ */
 function send(ws: WebSocket, event: string, data: any) {
   ws.send(JSON.stringify({ event, data }));
 }
 
+/**
+ * Gateway WebSocket para la comunicación en tiempo real.
+ * Gestiona login de estudiantes, recepción de respuestas,
+ * tracking de posición VR y emisión de eventos del juego.
+ */
 @WebSocketGateway()
 export class GamificationGateway
   implements OnGatewayConnection, OnGatewayDisconnect
@@ -27,7 +35,10 @@ export class GamificationGateway
   private socketIndex = 0;
   private socketIds = new WeakMap<WebSocket, string>();
   private sockets = new Map<string, WebSocket>();
-  private clientSessions = new Map<WebSocket, { studentId: string; sessionId: number }>();
+  private clientSessions = new Map<
+    WebSocket,
+    { studentId: string; sessionId: number }
+  >();
   private lastLogTimes = new Map<string, number>();
 
   constructor(
@@ -68,11 +79,13 @@ export class GamificationGateway
     }
   }
 
+  /** Asigna un ID interno al socket al conectarse. */
   handleConnection(client: WebSocket) {
     const id = this.getId(client);
     console.log(`[SOCKET] Conexion establecida: ID ${id}`);
   }
 
+  /** Libera recursos al desconectarse un socket. */
   handleDisconnect(client: WebSocket) {
     const id = this.getId(client);
     this.gamificationService.removePlayerSocket(id);
@@ -82,6 +95,11 @@ export class GamificationGateway
     console.log(`[SOCKET] Conexion liberada: ID ${id}`);
   }
 
+  /**
+   * Maneja el login de un estudiante vía WebSocket.
+   * Registra al estudiante en la sesión, notifica a la sala (STUDENT_JOINED)
+   * y sincroniza la pregunta activa si existe.
+   */
   @SubscribeMessage('LOGIN_PLAYER')
   async handleLoginPlayer(
     @MessageBody() data: LoginStudentDto,
@@ -143,6 +161,12 @@ export class GamificationGateway
     return registration;
   }
 
+  /**
+   * Recibe las colocaciones de ítems de un estudiante.
+   * - Evalúa la respuesta y retorna resultado inmediato
+   * - Notifica a la sala (STUDENT_ANSWERED)
+   * - Si todos respondieron, avanza automáticamente a la siguiente pregunta
+   */
   @SubscribeMessage('SUBMIT_RESPONSE')
   async handleSubmitResponse(
     @MessageBody()
@@ -194,11 +218,14 @@ export class GamificationGateway
     return response;
   }
 
+  /**
+   * Recibe datos de tracking de posición VR (x, y, z) y
+   * hace relay (broadcast) a los demás clientes de la misma sesión
+   * mediante el evento REMOTE_PLAYER_UPDATE.
+   * Throttle de logs: máximo 1 cada 2 segundos por jugador.
+   */
   @SubscribeMessage('TRACKING_DATA')
-  handleTracking(
-    @ConnectedSocket() client: any,
-    @MessageBody() body: any,
-  ) {
+  handleTracking(@ConnectedSocket() client: any, @MessageBody() body: any) {
     let parsedBody = body;
     if (typeof body === 'string') {
       try {
@@ -208,7 +235,6 @@ export class GamificationGateway
       }
     }
 
-    // Extraemos los datos del payload que envía Unity o los bots
     const data = parsedBody && parsedBody.data ? parsedBody.data : parsedBody;
     if (!data) return;
 
@@ -227,22 +253,28 @@ export class GamificationGateway
       this.lastLogTimes.set(playerId, now);
     }
 
-    // Hacemos el Relay (Broadcast) a todos los demás clientes de la misma sesión
     this.server.clients.forEach((c: any) => {
-      if (c !== client && c.readyState === WebSocket.OPEN && c.sessionId === sessionId) {
-        c.send(JSON.stringify({
-          event: 'REMOTE_PLAYER_UPDATE',
-          data: {
-            playerId: playerId,
-            x: x,
-            y: y,
-            z: z
-          }
-        }));
+      if (
+        c !== client &&
+        c.readyState === WebSocket.OPEN &&
+        c.sessionId === sessionId
+      ) {
+        c.send(
+          JSON.stringify({
+            event: 'REMOTE_PLAYER_UPDATE',
+            data: {
+              playerId: playerId,
+              x: x,
+              y: y,
+              z: z,
+            },
+          }),
+        );
       }
     });
   }
 
+  /** Emite un nuevo ejercicio a todos los sockets de una sesión. */
   emitQuestionToRoom(sessionId: number, questionData: any) {
     console.log(
       `[GATEWAY] Emitiendo NEW_QUESTION_LOADED a sesion ${sessionId}:`,
@@ -251,6 +283,7 @@ export class GamificationGateway
     this.sendToSession(sessionId, 'NEW_QUESTION_LOADED', questionData);
   }
 
+  /** Emite un evento genérico a todos los sockets de una sesión. */
   emitToSession(sessionId: number, event: string, data: any) {
     console.log(
       `[GATEWAY] Emitiendo ${event} a sesion ${sessionId}:`,
@@ -259,6 +292,7 @@ export class GamificationGateway
     this.sendToSession(sessionId, event, data);
   }
 
+  /** Emite un evento a un socket específico por su ID. */
   emitToSocket(socketId: string, event: string, data: any) {
     console.log(
       `[GATEWAY] Emitiendo ${event} a socket ${socketId}:`,

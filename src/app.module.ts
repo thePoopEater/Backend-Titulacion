@@ -7,6 +7,11 @@ import { StatisticsModule } from './statistics/statistics.module';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 
+/**
+ * Módulo raíz de la aplicación.
+ * Configura la conexión a PostgreSQL mediante TypeORM e importa
+ * los módulos funcionales: Content, Gamification, Statistics y Auth.
+ */
 @Module({
   imports: [
     TypeOrmModule.forRoot({

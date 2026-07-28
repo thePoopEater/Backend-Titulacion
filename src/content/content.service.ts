@@ -5,6 +5,10 @@ import { ExerciseEntity } from './entities/exercise.entity';
 import { CategoryEntity } from './entities/category.entity';
 import { ItemEntity } from './entities/item.entity';
 
+/**
+ * Servicio de contenido educativo.
+ * Gestiona el CRUD de ejercicios de clasificación con sus categorías e ítems.
+ */
 @Injectable()
 export class ContentService {
   constructor(
@@ -16,12 +20,17 @@ export class ContentService {
     private readonly itemRepository: Repository<ItemEntity>,
   ) {}
 
+  /**
+   * Crea un ejercicio con categorías e ítems.
+   * Los ítems referencian a la categoría correcta mediante correctCategoryIndex
+   * (índice 0-based del array de categorías).
+   */
   async createExercise(dto: any): Promise<ExerciseEntity> {
     const exercise = this.exerciseRepository.create({
       title: dto.title,
       asignatura: dto.asignatura || null,
       descripcion: dto.descripcion || null,
-      isActive : true
+      isActive: true,
     });
     const saved = await this.exerciseRepository.save(exercise);
 
@@ -46,6 +55,7 @@ export class ContentService {
     return this.getExerciseById(saved.id);
   }
 
+  /** Obtiene un ejercicio por ID incluyendo categorías e ítems. */
   async getExerciseById(id: number): Promise<ExerciseEntity> {
     const exercise = await this.exerciseRepository.findOne({
       where: { id },
@@ -60,12 +70,13 @@ export class ContentService {
     return exercise;
   }
 
+  /** Obtiene todos los ejercicios activos ordenados por ID ascendente. */
   async getAllExercises(): Promise<ExerciseEntity[]> {
     const exercises = await this.exerciseRepository.find({
       relations: { categories: true },
       order: { id: 'ASC' },
-          where: { isActive: true}
-    },);
+      where: { isActive: true },
+    });
     for (const ex of exercises) {
       (ex as any).items = await this.itemRepository.find({
         where: { exerciseId: ex.id },
@@ -74,6 +85,11 @@ export class ContentService {
     return exercises;
   }
 
+  /**
+   * Actualiza un ejercicio parcial o totalmente.
+   * Si se envían categorías o ítems, se reemplazan completamente
+   * (borra los existentes y crea nuevos).
+   */
   async updateExercise(id: number, dto: any): Promise<ExerciseEntity> {
     await this.getExerciseById(id);
     const updateData: any = {};
@@ -109,14 +125,17 @@ export class ContentService {
     }
     return this.getExerciseById(id);
   }
-  // ahora solo desactiva
-  async deleteExercise(id: number): Promise<void> {
 
+  /**
+   * Desactiva un ejercicio (soft delete).
+   * El ejercicio permanece en BD pero no se lista en las consultas por defecto.
+   */
+  async deleteExercise(id: number): Promise<void> {
     const exercise = await this.exerciseRepository.findOne({ where: { id } });
     if (!exercise) {
       throw new NotFoundException(`Ejercicio ID ${id} no encontrado.`);
     }
-    
-    await this.exerciseRepository.update(id,{isActive : false});
+
+    await this.exerciseRepository.update(id, { isActive: false });
   }
 }

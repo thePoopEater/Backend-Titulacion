@@ -20,6 +20,7 @@ import {
 import { GamificationGateway } from './gamification.gateway';
 import { LatencyLogEntity } from 'src/statistics/entities/latency-log.entity';
 
+/** Respuesta de un estudiante almacenada en memoria volátil durante la ronda. */
 export interface VRResponse {
   playerId: string;
   placements: Record<number, number>;
@@ -29,6 +30,16 @@ export interface VRResponse {
   decisionTime: number;
 }
 
+/**
+ * Servicio central de gamificación.
+ * Gestiona sesiones de juego, rondas, colas de preguntas,
+ * registro de respuestas, cálculo de puntajes y mitigación de latencia.
+ *
+ * El estado del juego activo se mantiene en memoria (volátil):
+ * - activeRoundResponses: respuestas de la pregunta actual
+ * - activePlayers: mapa socketId -> { studentId, sessionId }
+ * - roundQuestionQueue: cola de IDs de ejercicios para la ronda
+ */
 @Injectable()
 export class GamificationService {
   private activeRoundResponses: VRResponse[] = [];
@@ -62,6 +73,10 @@ export class GamificationService {
     private readonly latencyRepository: Repository<LatencyLogEntity>,
   ) {}
 
+  /**
+   * Crea una nueva sesión de juego y la establece como activa.
+   * @param dto.name Nombre visible de la sesión
+   */
   async createSession(dto: CreateSessionDto): Promise<GameSessionEntity> {
     const session = this.sessionRepository.create({ name: dto.name });
     const savedSession = await this.sessionRepository.save(session);
@@ -69,6 +84,7 @@ export class GamificationService {
     return savedSession;
   }
 
+  /** Obtiene todas las sesiones activas (orden descendente por creación). */
   async getActiveSessions(): Promise<GameSessionEntity[]> {
     return await this.sessionRepository.find({
       where: { isActive: true },
@@ -76,12 +92,17 @@ export class GamificationService {
     });
   }
 
+  /** Obtiene todas las sesiones, activas e inactivas. */
   async getAllSessions(): Promise<GameSessionEntity[]> {
     return await this.sessionRepository.find({
       order: { createdAt: 'DESC' },
     });
   }
 
+  /**
+   * Obtiene una sesión por ID, incluyendo los ejercicios
+   * parseados desde questionOrder (JSON string).
+   */
   async getSessionById(id: number): Promise<any> {
     const session = await this.sessionRepository.findOne({
       where: { id },
@@ -113,6 +134,10 @@ export class GamificationService {
     };
   }
 
+  /**
+   * Asocia un socket WebSocket a un estudiante en una sesión.
+   * @returns Estado de login
+   */
   registerPlayerSocket(socketId: string, dto: LoginStudentDto) {
     this.activePlayers.set(socketId, {
       studentId: dto.studentId,
@@ -125,10 +150,17 @@ export class GamificationService {
     };
   }
 
+  /** Remueve un socket (desconexión de estudiante). */
   removePlayerSocket(socketId: string) {
     this.activePlayers.delete(socketId);
   }
 
+  /**
+   * Configura y arranca una ronda completa.
+   * - Establece la cola de IDs de ejercicios
+   * - Configura tiempo por pregunta y tiempo total de ronda
+   * - Avanza automáticamente al primer ejercicio
+   */
   async configureAndStartRound(dto: ConfigureRoundDto) {
     const session = await this.sessionRepository.findOne({
       where: { id: dto.sessionId },
@@ -147,6 +179,12 @@ export class GamificationService {
     return this.advanceToNextQuestionInQueue();
   }
 
+  /**
+   * Avanza al siguiente ejercicio en la cola.
+   * Procesa respuestas previas si las hay.
+   * Verifica límite de tiempo global de ronda.
+   * @returns Estado: question_active, round_ended o round_completed
+   */
   async advanceToNextQuestionInQueue() {
     if (this.isQuestionActive && this.activeRoundResponses.length > 0) {
       await this.processRoundResults();
@@ -174,11 +212,20 @@ export class GamificationService {
     return this.setCurrentQuestionInternal(dto);
   }
 
+  /**
+   * Avanza directamente a una pregunta específica (sin cola).
+   * Usado por active-question endpoint.
+   */
   async advanceToQuestionDirect(dto: SetCurrentQuestionDto) {
     this.currentSessionId = dto.sessionId;
     return this.setCurrentQuestionInternal(dto);
   }
 
+  /**
+   * Establece un ejercicio como activo en la sesión.
+   * Marca el sessionQuestion como isCurrent, resetea respuestas,
+   * y emite NEW_QUESTION_LOADED por WebSocket a todos los estudiantes.
+   */
   private async setCurrentQuestionInternal(
     dto: SetCurrentQuestionDto,
   ): Promise<any> {
@@ -238,16 +285,33 @@ export class GamificationService {
     };
   }
 
+  /**
+   * Cuenta los estudiantes conectados a una sesión
+   * (excluye la consola del profesor).
+   */
   getStudentCountForSession(sessionId: number): number {
     return Array.from(this.activePlayers.values()).filter(
       (p) => p.sessionId === sessionId && p.studentId !== 'CONSOLA_PROFESOR',
     ).length;
   }
 
+  /** Cantidad de respuestas recibidas para la pregunta activa. */
   getRespondedCount(): number {
     return this.activeRoundResponses.length;
   }
 
+  /**
+   * Registra la respuesta de un estudiante a la pregunta activa.
+   *
+   * Flujo:
+   * 1. Validación (pregunta activa, autenticación, duplicados)
+   * 2. Evaluación académica: compara placements contra categorías correctas
+   * 3. Mitigación de lag: calcula compensatedLag y decisionTime
+   * 4. Almacenamiento en memoria volátil (activeRoundResponses)
+   * 5. Persistencia inmediata en BD (latency_logs)
+   *
+   * @returns Resultado individual de la clasificación
+   */
   async registerPlayerResponse(
     socketId: string,
     placements: Record<number, number>,
@@ -382,6 +446,11 @@ export class GamificationService {
     };
   }
 
+  /**
+   * Cierra una sesión de juego.
+   * Procesa respuestas pendientes si las hay, marca la sesión como inactiva,
+   * resetea el estado en memoria y emite eventos de cierre vía WebSocket.
+   */
   async closeSession(sessionId: number): Promise<any> {
     const session = await this.sessionRepository.findOne({
       where: { id: sessionId },
@@ -417,6 +486,19 @@ export class GamificationService {
     return { status: 'session_closed', sessionId };
   }
 
+  /**
+   * Procesa los resultados de la ronda/pregunta actual.
+   *
+   * Algoritmo:
+   * 1. Ordena respuestas por clientTimestamp (justicia competitiva)
+   * 2. Evalúa cada respuesta contra las categorías correctas
+   * 3. Calcula puntaje: (aciertos / totalItems) * 1000
+   * 4. Actualiza positionInGame en BD
+   * 5. Emite ROUND_SUMMARY a la sala y ROUND_CLOSED a cada estudiante
+   *
+   * @param skipEmit Si es true, omite el envío de ROUND_CLOSED individual
+   * @returns Array con los resultados procesados
+   */
   async processRoundResults(skipEmit = false) {
     if (!this.currentSessionId || !this.currentExerciseId) {
       throw new BadRequestException('No active execution state found');
@@ -448,7 +530,7 @@ export class GamificationService {
     const categoryMap = new Map<number, string>();
     for (const c of categories) categoryMap.set(c.id, c.name);
 
-    // === EL ALGORITMO ORDENA EN MEMORIA POR EL TIEMPO DEL QUEST ===
+    // Ordena respuestas por timestamp del cliente (el que respondió primero, mejor posición)
     const sortedResponses = [...this.activeRoundResponses].sort(
       (a, b) => a.clientTimestamp - b.clientTimestamp,
     );
@@ -565,6 +647,10 @@ export class GamificationService {
     return roundSummary;
   }
 
+  /**
+   * Emite el resumen final de ronda a cada estudiante individualmente.
+   * Incluye puntaje total, tiempo total, y resultados detallados por pregunta.
+   */
   private async emitFinalRoundSummary(reason: string) {
     const sessionId = this.currentSessionId!;
     const logs = await this.latencyRepository.find({

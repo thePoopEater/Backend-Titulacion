@@ -6,6 +6,7 @@ import {
   Index,
 } from 'typeorm';
 
+/** Registro de métricas de una respuesta de estudiante (latencia, puntaje, posición). */
 @Entity('latency_logs')
 @Index(['sessionId', 'questionId'])
 export class LatencyLogEntity {

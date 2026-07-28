@@ -11,6 +11,10 @@ import { RefreshTokenEntity } from './entities/refresh-token.entity';
 import { JwtPayload } from './interfaces/jwt-payload.interface';
 import { randomBytes } from 'crypto';
 
+/**
+ * Servicio de autenticación.
+ * Gestiona registro, login, refresh de tokens JWT y obtención de perfil.
+ */
 @Injectable()
 export class AuthService {
   constructor(
@@ -21,6 +25,11 @@ export class AuthService {
     private readonly jwtService: JwtService,
   ) {}
 
+  /**
+   * Registra un nuevo usuario.
+   * Hashea la contraseña con bcrypt y guarda en BD.
+   * @returns ID del usuario creado
+   */
   async createUser(registerRequestDTO: RegisterRequestDTO): Promise<number> {
     const password = registerRequestDTO.password;
     const hashedPassword = await bcrypt.hash(password, 10);
@@ -35,6 +44,10 @@ export class AuthService {
     return idUser;
   }
 
+  /**
+   * Valida credenciales de usuario contra BD.
+   * @returns UserEntity si las credenciales son válidas, null en caso contrario
+   */
   async validateUser(
     email: string,
     password: string,
@@ -46,6 +59,10 @@ export class AuthService {
     return null;
   }
 
+  /**
+   * Inicia sesión del usuario.
+   * Valida credenciales y genera access token (1h) + refresh token (7d).
+   */
   async login(
     loginRequestDTO: LoginRequestDTO,
   ): Promise<{ accessToken: string; refreshToken: string }> {
@@ -69,6 +86,10 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
+  /**
+   * Renueva access y refresh tokens usando un refresh token válido.
+   * Revoca el refresh token anterior (rotación de tokens).
+   */
   async refreshTokens(
     refreshToken: string,
   ): Promise<{ accessToken: string; refreshToken: string }> {
@@ -101,6 +122,9 @@ export class AuthService {
     return { accessToken: newAccessToken, refreshToken: newRefreshToken };
   }
 
+  /**
+   * Obtiene el perfil del usuario (excluye la contraseña).
+   */
   async getProfile(userId: number): Promise<Omit<UserEntity, 'password'>> {
     const user = await this.userRepository.findOne({ where: { id: userId } });
     if (!user) {
@@ -111,6 +135,10 @@ export class AuthService {
     return result;
   }
 
+  /**
+   * Genera un refresh token criptográficamente aleatorio
+   * con validez de 7 días.
+   */
   private async generateRefreshToken(user: UserEntity): Promise<string> {
     const token = randomBytes(40).toString('hex');
     const expiresAt = new Date();
@@ -125,6 +153,7 @@ export class AuthService {
     return token;
   }
 
+  /** Marca un refresh token como revocado (inhabilitado). */
   private async revokeRefreshToken(id: number): Promise<void> {
     await this.refreshTokenRepository.update(id, { revoked: true });
   }

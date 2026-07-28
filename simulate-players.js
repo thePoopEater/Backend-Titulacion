@@ -1,16 +1,15 @@
 const WebSocket = require('ws');
 
-// Configuration
 const SERVER_URL = 'ws://localhost:3000';
 const SESSION_ID = 2;
 const NUM_BOTS = 3;
 
+/** Simula un jugador virtual que envía tracking de posición VR en tiempo real. */
 class VirtualPlayer {
   constructor(id) {
     this.id = id;
     this.ws = null;
     this.intervalId = null;
-    // Starting coordinates centered around room center (x:-9.74944 y:0.02395 z:-8.76468)
     const centerX = -9.74944;
     const centerY = 0.88;
     const centerZ = -8.76468;

@@ -1,5 +1,6 @@
 import { Entity, PrimaryGeneratedColumn, Column } from 'typeorm';
 
+/** Ítem que los estudiantes deben clasificar dentro de una categoría. */
 @Entity('items')
 export class ItemEntity {
   @PrimaryGeneratedColumn()

@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 import { CategoryEntity } from './category.entity';
 
+/** Ejercicio de clasificación: un conjunto de categorías e ítems a clasificar. */
 @Entity('exercises')
 export class ExerciseEntity {
   @PrimaryGeneratedColumn()
@@ -21,8 +22,8 @@ export class ExerciseEntity {
   @Column('text', { nullable: true })
   descripcion: string;
 
-  @Column('bool', {default: true})
-  isActive : boolean;
+  @Column('bool', { default: true })
+  isActive: boolean;
 
   @CreateDateColumn()
   createdAt: Date;

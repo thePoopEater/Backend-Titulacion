@@ -7,6 +7,7 @@ import {
 } from 'typeorm';
 import { SessionQuestionEntity } from './session-question.entity';
 
+/** Sesión de juego: contenedor de una partida con sus preguntas y estudiantes. */
 @Entity('game_sessions')
 export class GameSessionEntity {
   @PrimaryGeneratedColumn()

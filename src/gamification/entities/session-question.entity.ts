@@ -2,6 +2,7 @@ import { Entity, PrimaryGeneratedColumn, Column, ManyToOne } from 'typeorm';
 import { GameSessionEntity } from './game-session.entity';
 import { ExerciseEntity } from '../../content/entities/exercise.entity';
 
+/** Relación entre sesión y ejercicio: controla qué pregunta está activa y sus tiempos. */
 @Entity('session_questions')
 export class SessionQuestionEntity {
   @PrimaryGeneratedColumn()

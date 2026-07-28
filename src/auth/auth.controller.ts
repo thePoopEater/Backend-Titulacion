@@ -16,10 +16,12 @@ import { JwtRefreshGuard } from './guards/jwt-refresh.guard';
 import { CurrentUser } from './decorators/current-user.decorator';
 import { UserEntity } from './entities/user.entity';
 
+/** Controlador REST del módulo de autenticación. */
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
+  /** Inicia sesión con email y contraseña. Retorna access + refresh tokens. */
   @Post('login')
   async loginUser(
     @Body() loginRequestDTO: LoginRequestDTO,
@@ -33,6 +35,7 @@ export class AuthController {
     });
   }
 
+  /** Registra un nuevo usuario profesor. */
   @Post('register')
   async registerUser(
     @Body() registerRequestDTO: RegisterRequestDTO,
@@ -47,6 +50,7 @@ export class AuthController {
     });
   }
 
+  /** Renueva tokens usando refresh token (requiere JwtRefreshGuard). */
   @UseGuards(JwtRefreshGuard)
   @Post('refresh')
   async refreshTokens(
@@ -61,6 +65,7 @@ export class AuthController {
     });
   }
 
+  /** Obtiene el perfil del usuario autenticado (requiere JwtAuthGuard). */
   @UseGuards(JwtAuthGuard)
   @Get('me')
   async getProfile(@CurrentUser() user: UserEntity, @Res() res: Response) {
